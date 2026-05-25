@@ -24,7 +24,7 @@ final historyCheckinsProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef HistoryCheckinsRef = AutoDisposeFutureProviderRef<List<CheckinModel>>;
-String _$syncStreakHash() => r'57ccd42ef1467677fb7837e6afb58b7098cd552a';
+String _$syncStreakHash() => r'9c1fe8f9e8b92f61c72928f03e26bf4fca8249ea';
 
 /// See also [syncStreak].
 @ProviderFor(syncStreak)

@@ -13,6 +13,7 @@ import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/checkin/screens/checkin_screen.dart';
 import '../../features/history/screens/history_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/settings/screens/edit_profile_screen.dart';
 import '../../features/splash/screens/splash_screen.dart';
 import '../../shared/widgets/bottom_nav_shell.dart';
 
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String checkin = '/checkin';
   static const String history = '/history';
   static const String settings = '/settings';
+  static const String editProfile = '/edit-profile';
 }
 
 class RouterNotifier extends ChangeNotifier {
@@ -112,6 +114,10 @@ GoRouter appRouter(AppRouterRef ref) {
       GoRoute(
         path: AppRoutes.checkin,
         builder: (context, state) => const CheckinScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.editProfile,
+        builder: (context, state) => const EditProfileScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) {

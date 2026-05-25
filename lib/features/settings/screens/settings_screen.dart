@@ -5,6 +5,11 @@ import '../../../core/theme/typography.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/providers/current_user_provider.dart';
+import '../../auth/providers/current_couple_provider.dart';
+import '../../auth/providers/partner_provider.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/navigation/app_router.dart';
 import '../providers/settings_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -13,6 +18,13 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prefs = ref.watch(settingsControllerProvider);
+    final userAsync = ref.watch(currentUserProvider);
+    final partnerAsync = ref.watch(partnerStreamProvider);
+    final coupleAsync = ref.watch(currentCoupleStreamProvider);
+
+    final user = userAsync.valueOrNull;
+    final partner = partnerAsync.valueOrNull;
+    final couple = coupleAsync.valueOrNull;
 
     return AmbientBackground(
       child: Scaffold(
@@ -26,7 +38,7 @@ class SettingsScreen extends ConsumerWidget {
         body: ListView(
           padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 120),
           children: [
-            _buildAvatarHeader(),
+            _buildAvatarHeader(user, partner, couple),
             const SizedBox(height: 32),
             _buildSectionHeader('YOUR RELATIONSHIP'),
             _buildSettingsGroup(
@@ -34,19 +46,21 @@ class SettingsScreen extends ConsumerWidget {
                 _buildSettingsRow(
                   icon: Icons.calendar_today_rounded,
                   title: 'Anniversary',
-                  value: 'Oct 14, 2021',
+                  value: couple?.anniversaryDate != null 
+                    ? "${couple!.anniversaryDate!.month}/${couple.anniversaryDate!.day}/${couple.anniversaryDate!.year}"
+                    : 'Not set',
                 ),
                 _buildDivider(),
                 _buildSettingsRow(
                   icon: Icons.location_on_rounded,
-                  title: 'Sarah\'s Location',
-                  value: 'London, UK',
+                  title: "${partner?.displayName ?? 'Partner'}'s Timezone",
+                  value: partner?.timezone ?? 'Unknown',
                 ),
                 _buildDivider(),
                 _buildSettingsRow(
                   icon: Icons.access_time_rounded,
-                  title: 'Timezone Difference',
-                  value: '+5 Hours',
+                  title: 'Your Timezone',
+                  value: user?.timezone ?? 'Unknown',
                 ),
               ],
             ),
@@ -84,6 +98,7 @@ class SettingsScreen extends ConsumerWidget {
                   icon: Icons.person_rounded,
                   title: 'Account Details',
                   showChevron: true,
+                  onTap: () => context.push(AppRoutes.editProfile),
                 ),
                 _buildDivider(),
                 _buildSettingsRow(
@@ -108,7 +123,15 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAvatarHeader() {
+  Widget _buildAvatarHeader(user, partner, couple) {
+    final userName = user?.displayName ?? 'You';
+    final partnerName = partner?.displayName ?? 'Partner';
+    
+    // Simple duration calc for MVP
+    final String connectionDuration = couple?.createdAt != null 
+      ? 'Connected since ${couple!.createdAt.year}'
+      : 'Connected recently';
+
     return Column(
       children: [
         SizedBox(
@@ -136,9 +159,7 @@ class SettingsScreen extends ConsumerWidget {
               // You
               Positioned(
                 left: 0,
-                child: _buildAvatar(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuA4OzT_GkmKrSjjuD2iNHNPpxOl20CamFvOxiClOcvOE0C-03JkxVYNsFp64zD0_AbPXJTVcJViy1vvHspT_BuBSHEyhouizsPeUfAa_R2Rfh7ie_vmp7N0xLGdeuGHM9COBeuUU7EpvUfqkaFdPIzuMxqcfPxwOK_cecx0K_tO28V1SzN-HHCxnosxYuywvqsc7ihXfeVGA4-Dwfz4VrDjIDY8aeMG9ohARSLmfBIA8kkTGVAO09840mDWymUeIxeRXb2BiJ9tDQmR',
-                ),
+                child: _buildAvatar(user?.avatarUrl),
               ),
               // Heart icon in middle
               Container(
@@ -153,33 +174,36 @@ class SettingsScreen extends ConsumerWidget {
               // Partner
               Positioned(
                 right: 0,
-                child: _buildAvatar(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuAWm2FK8GqjIhDVUN9ndzE6gbzS2jJvO0FuCf6CK6qNrsX1aGBCbsw2pdaxdHBLRZ_Nvq8bI9avmD5BQoIGuuRWH6Ci4P6Qt54hSexH16jzzrwVbk2lhC2DXFfOSlOPNxJRcUHILifywI0Yv81yCf0iyl4J4RTn-lPAP9DD-sj7m_F9zGBcZq0lfTBUWMb89n9fCiXzb_osbmTm567-YMfEXUMkEdTijPnJ_-J3RiLqJVllvS0MRbEFA3f_Qr6iXJtR_4MDTAUQSORy',
-                ),
+                child: _buildAvatar(partner?.avatarUrl),
               ),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        Text('Alex & Sarah', style: AppTypography.headlineLgMobile),
+        Text('$userName & $partnerName', style: AppTypography.headlineLgMobile),
         const SizedBox(height: 4),
-        Text('Connected for 2 years', style: AppTypography.bodySm.copyWith(color: AppColors.primary)),
+        Text(connectionDuration, style: AppTypography.bodySm.copyWith(color: AppColors.primary)),
       ],
     );
   }
 
-  Widget _buildAvatar(String url) {
+  Widget _buildAvatar(String? url) {
     return Container(
       width: 80,
       height: 80,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.outline.withValues(alpha: 0.3), width: 3),
-        image: DecorationImage(
-          image: NetworkImage(url),
-          fit: BoxFit.cover,
-        ),
+        image: url != null && url.isNotEmpty
+          ? DecorationImage(
+              image: NetworkImage(url),
+              fit: BoxFit.cover,
+            )
+          : null,
       ),
+      child: url == null || url.isEmpty
+          ? const Icon(Icons.person_rounded, size: 40, color: AppColors.outline)
+          : null,
     );
   }
 
@@ -208,6 +232,7 @@ class SettingsScreen extends ConsumerWidget {
     required String title,
     String? value,
     bool showChevron = false,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -223,7 +248,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ],
       ),
-      onTap: showChevron ? () {} : null,
+      onTap: onTap ?? (showChevron ? () {} : null),
     );
   }
 

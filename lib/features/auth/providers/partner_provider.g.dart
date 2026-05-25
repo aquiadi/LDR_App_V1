@@ -1,28 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'insights_provider.dart';
+part of 'partner_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$weeklyInsightsHash() => r'3c2b4ab4ce53f9456390f42120cf37764e24e175';
+String _$partnerStreamHash() => r'8f42f4b1f8f2f72399051226b48ff66d91704074';
 
-/// See also [weeklyInsights].
-@ProviderFor(weeklyInsights)
-final weeklyInsightsProvider =
-    AutoDisposeFutureProvider<Map<String, dynamic>>.internal(
-  weeklyInsights,
-  name: r'weeklyInsightsProvider',
+/// See also [partnerStream].
+@ProviderFor(partnerStream)
+final partnerStreamProvider = AutoDisposeStreamProvider<UserModel?>.internal(
+  partnerStream,
+  name: r'partnerStreamProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$weeklyInsightsHash,
+      : _$partnerStreamHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef WeeklyInsightsRef = AutoDisposeFutureProviderRef<Map<String, dynamic>>;
+typedef PartnerStreamRef = AutoDisposeStreamProviderRef<UserModel?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

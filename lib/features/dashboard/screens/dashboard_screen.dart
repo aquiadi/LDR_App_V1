@@ -6,6 +6,9 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../auth/providers/current_user_provider.dart';
+import '../../auth/providers/partner_provider.dart';
+import '../../auth/providers/current_couple_provider.dart';
 import '../../checkin/providers/checkin_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../models/checkin_model.dart';
@@ -39,11 +42,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final todayCheckinAsync = ref.watch(todayCheckinProvider);
     final partnerCheckinAsync = ref.watch(partnerCheckinStreamProvider);
+    final partnerAsync = ref.watch(partnerStreamProvider);
+    final userAsync = ref.watch(currentUserProvider);
+
+    final user = userAsync.valueOrNull;
+    final partner = partnerAsync.valueOrNull;
 
     return AmbientBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: _buildAppBar(),
+        appBar: _buildHeader(user),
         body: RefreshIndicator(
           onRefresh: () async {
             // ignore: unused_result
@@ -52,9 +60,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: ListView(
             padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 120),
             children: [
-              _buildPartnerStatusCard(partnerCheckinAsync),
+              _buildPartnerStatusCard(partner, partnerCheckinAsync),
               const SizedBox(height: 16),
-              _buildBentoGrid(todayCheckinAsync, partnerCheckinAsync),
+              _buildBentoGrid(todayCheckinAsync, partnerCheckinAsync, partner),
               const SizedBox(height: 16),
               _buildDailyPromptCard(todayCheckinAsync),
               const SizedBox(height: 16),
@@ -66,7 +74,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildHeader(user) {
+    final avatarUrl = user?.avatarUrl;
+
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -78,12 +88,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
-              image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuAWm2FK8GqjIhDVUN9ndzE6gbzS2jJvO0FuCf6CK6qNrsX1aGBCbsw2pdaxdHBLRZ_Nvq8bI9avmD5BQoIGuuRWH6Ci4P6Qt54hSexH16jzzrwVbk2lhC2DXFfOSlOPNxJRcUHILifywI0Yv81yCf0iyl4J4RTn-lPAP9DD-sj7m_F9zGBcZq0lfTBUWMb89n9fCiXzb_osbmTm567-YMfEXUMkEdTijPnJ_-J3RiLqJVllvS0MRbEFA3f_Qr6iXJtR_4MDTAUQSORy'),
-                fit: BoxFit.cover,
-              ),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
+              image: avatarUrl != null && avatarUrl.isNotEmpty
+                ? DecorationImage(
+                    image: NetworkImage(avatarUrl),
+                    fit: BoxFit.cover,
+                  )
+                : null,
             ),
+            child: avatarUrl == null || avatarUrl.isEmpty
+              ? const Icon(Icons.person_rounded, color: AppColors.outline)
+              : null,
           ),
           const SizedBox(width: 12),
           Text('LDR Sync', style: AppTypography.headlineMd.copyWith(color: AppColors.primary)),
@@ -103,47 +118,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPartnerStatusCard(AsyncValue<CheckinModel?> partnerCheckinAsync) {
+  Widget _buildPartnerStatusCard(partner, AsyncValue<CheckinModel?> partnerCheckinAsync) {
+    final partnerName = partner?.displayName ?? 'Partner';
+    final partnerAvatar = partner?.avatarUrl;
+    final partnerTime = partner?.timezone ?? 'Unknown Time';
+
     return GlassCard(
       padding: const EdgeInsets.all(24),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryContainer,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(color: AppColors.primaryContainer, blurRadius: 8, spreadRadius: 2)
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('SARAH IS ACTIVE', style: AppTypography.labelMd.copyWith(color: AppColors.primary)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text('London, UK', style: AppTypography.headlineMd),
-                  Text('It\'s 10:42 PM there — Late night vibes', style: AppTypography.bodySm),
-                ],
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
+                  image: partnerAvatar != null && partnerAvatar.isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(partnerAvatar),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                ),
+                child: partnerAvatar == null || partnerAvatar.isEmpty
+                  ? const Icon(Icons.person_rounded, color: AppColors.outline)
+                  : null,
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('56°F', style: AppTypography.headlineMd),
-                  Text('Cloudy', style: AppTypography.bodySm),
-                ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${partnerName.toUpperCase()} IS ACTIVE', style: AppTypography.labelMd.copyWith(color: AppColors.primary, letterSpacing: 1.5)),
+                    const SizedBox(height: 4),
+                    Text('8:42 PM • $partnerTime', style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
+                  ],
+                ),
               ),
             ],
           ),
@@ -169,7 +183,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildBentoGrid(AsyncValue<CheckinModel?> myCheckinAsync, AsyncValue<CheckinModel?> partnerCheckinAsync) {
+  Widget _buildBentoGrid(AsyncValue<CheckinModel?> myCheckinAsync, AsyncValue<CheckinModel?> partnerCheckinAsync, partner) {
     return Row(
       children: [
         Expanded(
@@ -203,7 +217,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (checkin == null) {
                 return _buildEmptyPartnerMood();
               }
-              return _buildPartnerMood(checkin);
+              return _buildPartnerMood(checkin, partner);
             },
             loading: () => const GlassCard(child: SizedBox(height: 150, child: Center(child: CircularProgressIndicator()))),
             error: (_, __) => _buildEmptyPartnerMood(),
@@ -213,7 +227,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPartnerMood(CheckinModel checkin) {
+  IconData _getIconData(String id) {
+    switch (id) {
+      case 'sentiment_very_satisfied': return Icons.sentiment_very_satisfied_rounded;
+      case 'self_improvement': return Icons.self_improvement_rounded;
+      case 'favorite': return Icons.favorite_rounded;
+      case 'bedtime': return Icons.bedtime_rounded;
+      case 'distance': return Icons.social_distance_rounded;
+      case 'cloud': return Icons.cloud_rounded;
+      default: return Icons.sentiment_satisfied_rounded;
+    }
+  }
+
+  Widget _buildPartnerMood(CheckinModel checkin, partner) {
     return GlassCard(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -226,13 +252,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               shape: BoxShape.circle,
               color: AppColors.tertiaryContainer.withValues(alpha: 0.2),
             ),
-            child: const Center(
-              child: Icon(Icons.sentiment_satisfied_rounded, color: AppColors.tertiary, size: 32),
+            child: Center(
+              child: Icon(_getIconData(checkin.moodEmoji), color: AppColors.tertiary, size: 32),
             ),
           ),
           const SizedBox(height: 12),
           Text(checkin.moodLabel, style: AppTypography.headlineMd.copyWith(color: AppColors.tertiary)),
-          Text('CURRENT MOOD', style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
+          Text("${partner?.displayName?.toUpperCase() ?? 'PARTNER'}'S MOOD", style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
         ],
       ),
     );
@@ -256,7 +282,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Text('Waiting...', style: AppTypography.headlineMd.copyWith(color: AppColors.outline)),
+          Text('Pending', style: AppTypography.headlineMd.copyWith(color: AppColors.outline)),
           Text('CURRENT MOOD', style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
         ],
       ),
