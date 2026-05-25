@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../core/theme/colors.dart';
 
 class GlassCard extends StatelessWidget {
   final Widget child;
@@ -27,21 +26,15 @@ class GlassCard extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
         child: Container(
-          padding: padding ?? const EdgeInsets.all(20),
+          padding: padding ?? const EdgeInsets.all(24),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: borderGradientColor ?? AppColors.border.withValues(alpha: 0.4),
-              width: 1.2,
+              color: borderGradientColor ?? Colors.white.withValues(alpha: 0.1),
+              width: 1.0,
             ),
-            gradient: LinearGradient(
-              colors: [
-                (fillGradientColor ?? AppColors.surface).withValues(alpha: 0.6),
-                (fillGradientColor ?? AppColors.surface).withValues(alpha: 0.2),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: fillGradientColor ?? Colors.white.withValues(alpha: 0.04),
+            // Optional: Inner glow can be simulated with an inner shadow or just leaving as is
           ),
           child: child,
         ),

@@ -19,7 +19,6 @@ class InviteScreen extends ConsumerStatefulWidget {
 
 class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerProviderStateMixin {
   final _codeController = TextEditingController();
-  bool _isCreating = false;
   late final AnimationController _glowController;
   late final Animation<double> _glowAnimation;
 
@@ -49,9 +48,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
     await ref.read(inviteControllerProvider.notifier).joinCouple(code);
   }
 
-  Future<void> _generateCode() async {
-    await ref.read(inviteControllerProvider.notifier).generateInvite();
-  }
+
 
   void _copyToClipboard(String code) {
     Clipboard.setData(ClipboardData(text: code));

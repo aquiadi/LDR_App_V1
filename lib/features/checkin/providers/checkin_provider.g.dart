@@ -7,7 +7,7 @@ part of 'checkin_provider.dart';
 // **************************************************************************
 
 String _$partnerCheckinStreamHash() =>
-    r'310748ed5227e671b0f1d9d31f0c218db765a6fa';
+    r'9b853b3d83f61b3eaefad66536beb90000ada812';
 
 /// See also [partnerCheckinStream].
 @ProviderFor(partnerCheckinStream)

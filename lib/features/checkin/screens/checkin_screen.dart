@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
-import '../../../shared/widgets/custom_textfield.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/accent_gradient_button.dart';
 import '../providers/checkin_provider.dart';
 
 class CheckinScreen extends ConsumerStatefulWidget {
@@ -15,153 +16,254 @@ class CheckinScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckinScreenState extends ConsumerState<CheckinScreen> {
-  int _affectionScore = 5;
-  int _stressScore = 5;
   int _energyScore = 5;
-  String _selectedEmoji = '😊';
-  String _moodLabel = 'Content';
-  final _noteController = TextEditingController();
+  String _selectedEmoji = 'sentiment_very_satisfied'; // We use icons now, mapped to string
+  String _moodLabel = 'Joyful';
+  final _thoughtsController = TextEditingController();
 
-  final List<Map<String, String>> _moods = [
-    {'emoji': '💖', 'label': 'Loved'},
-    {'emoji': '😊', 'label': 'Content'},
-    {'emoji': '😴', 'label': 'Tired'},
-    {'emoji': '😢', 'label': 'Sad'},
-    {'emoji': '⚡', 'label': 'Energetic'},
-    {'emoji': '😤', 'label': 'Frustrated'},
+  final List<Map<String, dynamic>> _moods = [
+    {'icon': Icons.sentiment_very_satisfied_rounded, 'id': 'sentiment_very_satisfied', 'label': 'Joyful'},
+    {'icon': Icons.self_improvement_rounded, 'id': 'self_improvement', 'label': 'Calm'},
+    {'icon': Icons.favorite_rounded, 'id': 'favorite', 'label': 'Loved'},
+    {'icon': Icons.bedtime_rounded, 'id': 'bedtime', 'label': 'Sleepy'},
+    {'icon': Icons.social_distance_rounded, 'id': 'distance', 'label': 'Missing'},
+    {'icon': Icons.cloud_rounded, 'id': 'cloud', 'label': 'Gloomy'},
   ];
 
   @override
   void dispose() {
-    _noteController.dispose();
+    _thoughtsController.dispose();
     super.dispose();
   }
 
   void _submit() async {
+    // We map energy to the old scores for MVP compatibility if needed, 
+    // or just pass 5 for the missing ones.
     await ref.read(todayCheckinProvider.notifier).submitCheckin(
       moodEmoji: _selectedEmoji,
       moodLabel: _moodLabel,
-      affectionScore: _affectionScore,
-      stressScore: _stressScore,
+      affectionScore: 5, // Default for now
+      stressScore: 5,    // Default for now
       energyScore: _energyScore,
-      journalNote: _noteController.text.trim(),
+      journalNote: _thoughtsController.text.trim(),
     );
     if (mounted) context.pop();
   }
 
-  Widget _buildSlider(String title, int value, ValueChanged<double> onChanged, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title, style: AppTypography.bodyMedium),
-            Text(value.toString(), style: AppTypography.bodyMedium.copyWith(color: color, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        Slider(
-          value: value.toDouble(),
-          min: 1,
-          max: 10,
-          divisions: 9,
-          activeColor: color,
-          inactiveColor: color.withValues(alpha: 0.2),
-          onChanged: onChanged,
-        ),
-      ],
-    );
+  String _getEnergyLabel() {
+    if (_energyScore <= 2) return 'Resting';
+    if (_energyScore <= 4) return 'Mellow';
+    if (_energyScore <= 6) return 'Neutral';
+    if (_energyScore <= 8) return 'Dynamic';
+    return 'Electric';
   }
 
   @override
   Widget build(BuildContext context) {
     final checkinState = ref.watch(todayCheckinProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Daily Check-in'),
+    return AmbientBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: GlassCard(
-            padding: const EdgeInsets.all(24),
+        appBar: _buildAppBar(),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('How are you feeling today?', style: AppTypography.h2),
-                const SizedBox(height: 8),
-                Text('Be honest, your partner is here for you.', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                const SizedBox(height: 32),
-                
-                // Emoji Selector
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: _moods.map((mood) {
-                    final isSelected = _selectedEmoji == mood['emoji'];
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedEmoji = mood['emoji']!;
-                          _moodLabel = mood['label']!;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary.withValues(alpha: 0.2) : AppColors.surface,
-                          border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Text('${mood['emoji']} ${mood['label']}', style: TextStyle(fontSize: 16, color: isSelected ? AppColors.textPrimary : AppColors.textMuted)),
-                      ),
-                    );
-                  }).toList(),
+                _buildCeremonialGreeting(),
+                const SizedBox(height: 48),
+                _buildMainInteractiveContent(checkinState),
+                const SizedBox(height: 48),
+                Text(
+                  '"Distance is just a test to see how far love can travel."',
+                  style: AppTypography.bodySm.copyWith(fontStyle: FontStyle.italic, color: AppColors.outline.withValues(alpha: 0.6)),
+                  textAlign: TextAlign.center,
                 ),
-                
-                const SizedBox(height: 32),
-                
-                // Sliders
-                _buildSlider('Affection (Connection)', _affectionScore, (v) => setState(() => _affectionScore = v.toInt()), AppColors.primary),
-                const SizedBox(height: 16),
-                _buildSlider('Stress Level', _stressScore, (v) => setState(() => _stressScore = v.toInt()), Colors.orangeAccent),
-                const SizedBox(height: 16),
-                _buildSlider('Energy Level', _energyScore, (v) => setState(() => _energyScore = v.toInt()), Colors.greenAccent),
-                
-                const SizedBox(height: 32),
-                
-                CustomTextField(
-                  controller: _noteController,
-                  labelText: 'Journal Note (Optional)',
-                  hintText: 'Anything else on your mind?',
-                  maxLines: 3,
-                ),
-                
-                const SizedBox(height: 32),
-                
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: checkinState.isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      backgroundColor: AppColors.primary,
-                    ),
-                    child: checkinState.isLoading
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Share with Partner', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ),
-                )
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: const SizedBox.shrink(),
+      leadingWidth: 0,
+      title: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
+              image: const DecorationImage(
+                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuA4OzT_GkmKrSjjuD2iNHNPpxOl20CamFvOxiClOcvOE0C-03JkxVYNsFp64zD0_AbPXJTVcJViy1vvHspT_BuBSHEyhouizsPeUfAa_R2Rfh7ie_vmp7N0xLGdeuGHM9COBeuUU7EpvUfqkaFdPIzuMxqcfPxwOK_cecx0K_tO28V1SzN-HHCxnosxYuywvqsc7ihXfeVGA4-Dwfz4VrDjIDY8aeMG9ohARSLmfBIA8kkTGVAO09840mDWymUeIxeRXb2BiJ9tDQmR'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text('LDR Sync', style: AppTypography.headlineMd.copyWith(color: AppColors.primary)),
+        ],
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: IconButton(
+            icon: const Icon(Icons.close_rounded, color: AppColors.primary),
+            onPressed: () => context.pop(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCeremonialGreeting() {
+    return Column(
+      children: [
+        Text('Daily Check-In', style: AppTypography.headlineLgMobile),
+        const SizedBox(height: 8),
+        Text('Tell Sarah how you\'re feeling today.', style: AppTypography.bodyMd.copyWith(color: AppColors.outline)),
+      ],
+    );
+  }
+
+  Widget _buildMainInteractiveContent(AsyncValue checkinState) {
+    return GlassCard(
+      padding: const EdgeInsets.all(24),
+      borderRadius: 24,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildEnergySlider(),
+              const SizedBox(width: 24),
+              Expanded(child: _buildMoodSelector()),
+            ],
+          ),
+          const SizedBox(height: 32),
+          _buildThoughtsField(),
+          const SizedBox(height: 32),
+          AccentGradientButton(
+            text: 'Share Vibe',
+            icon: Icons.send_rounded,
+            isLoading: checkinState.isLoading,
+            onPressed: _submit,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnergySlider() {
+    return Column(
+      children: [
+        Text('ENERGY', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 250,
+          child: RotatedBox(
+            quarterTurns: 3,
+            child: Slider(
+              value: _energyScore.toDouble(),
+              min: 0,
+              max: 10,
+              divisions: 10,
+              activeColor: AppColors.primary,
+              inactiveColor: Colors.white.withValues(alpha: 0.1),
+              onChanged: (val) {
+                setState(() {
+                  _energyScore = val.toInt();
+                });
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _getEnergyLabel(),
+          style: AppTypography.bodyMd.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMoodSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('I\'M FEELING...', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.2,
+          children: _moods.map((mood) {
+            final isSelected = _selectedEmoji == mood['id'];
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedEmoji = mood['id'];
+                  _moodLabel = mood['label'];
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.04),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.1),
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(mood['icon'], color: AppColors.primary, size: 28),
+                    const SizedBox(height: 8),
+                    Text(mood['label'], style: AppTypography.labelMd),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThoughtsField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('WHAT\'S ON YOUR MIND?', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _thoughtsController,
+          maxLines: 4,
+          style: AppTypography.bodyLg,
+          decoration: InputDecoration(
+            hintText: 'Share a little more...',
+            hintStyle: AppTypography.bodyLg.copyWith(color: AppColors.outlineVariant),
+            filled: false,
+            border: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.outlineVariant)),
+            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.outlineVariant)),
+            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primary, width: 2)),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -5,82 +5,83 @@ import 'colors.dart';
 class AppTypography {
   AppTypography._();
 
-  // Primary Font Family: Outfit (Premium rounded geometric - perfect for warm emotional connection)
-  static TextStyle get _baseHeadingStyle => GoogleFonts.outfit(
-        color: AppColors.textPrimary,
-        fontWeight: FontWeight.bold,
+  // Primary Font Family: Sora
+  static TextStyle get _displayFamily => GoogleFonts.sora(
+        color: AppColors.onSurface,
       );
 
-  // Secondary Font Family: Inter (Highly legible, crisp - ideal for UI labels and long-form check-ins)
-  static TextStyle get _baseBodyStyle => GoogleFonts.inter(
-        color: AppColors.textPrimary,
+  // Secondary Font Family: Inter
+  static TextStyle get _bodyFamily => GoogleFonts.inter(
+        color: AppColors.onSurface,
       );
 
-  // --- Headings ---
-  static TextStyle get h1 => _baseHeadingStyle.copyWith(
+  // --- Display & Headings (Sora) ---
+  
+  static TextStyle get display => _displayFamily.copyWith(
+        fontSize: 40,
+        fontWeight: FontWeight.w600,
+        height: 48 / 40,
+        letterSpacing: -0.02 * 40,
+      );
+
+  static TextStyle get headlineLg => _displayFamily.copyWith(
         fontSize: 32,
-        letterSpacing: -0.5,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
+        height: 40 / 32,
+        letterSpacing: -0.01 * 32,
       );
 
-  static TextStyle get h2 => _baseHeadingStyle.copyWith(
+  static TextStyle get headlineLgMobile => _displayFamily.copyWith(
         fontSize: 24,
-        letterSpacing: -0.3,
-        fontWeight: FontWeight.w700,
-      );
-
-  static TextStyle get h3 => _baseHeadingStyle.copyWith(
-        fontSize: 20,
         fontWeight: FontWeight.w600,
+        height: 32 / 24,
       );
 
-  static TextStyle get subtitle => _baseHeadingStyle.copyWith(
-        fontSize: 16,
+  static TextStyle get headlineMd => _displayFamily.copyWith(
+        fontSize: 24,
         fontWeight: FontWeight.w500,
-        color: AppColors.textSecondary,
+        height: 32 / 24,
       );
 
-  // --- Body Copy ---
-  static TextStyle get bodyLarge => _baseBodyStyle.copyWith(
-        fontSize: 16,
-        height: 1.5,
-        fontWeight: FontWeight.normal,
-      );
-
-  static TextStyle get bodyMedium => _baseBodyStyle.copyWith(
-        fontSize: 14,
-        height: 1.4,
-        fontWeight: FontWeight.normal,
-      );
-
-  static TextStyle get bodySmall => _baseBodyStyle.copyWith(
-        fontSize: 12,
-        height: 1.3,
-        color: AppColors.textSecondary,
-      );
-
-  // --- UI Elements ---
-  static TextStyle get buttonText => _baseHeadingStyle.copyWith(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.2,
-      );
-
-  static TextStyle get labelText => _baseBodyStyle.copyWith(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
-        color: AppColors.textSecondary,
-      );
-
-  static TextStyle get cardTitle => _baseHeadingStyle.copyWith(
+  // --- Body Copy (Inter) ---
+  
+  static TextStyle get bodyLg => _bodyFamily.copyWith(
         fontSize: 18,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w400,
+        height: 28 / 18,
       );
 
-  static TextStyle get statsNumber => _baseHeadingStyle.copyWith(
-        fontSize: 48,
-        fontWeight: FontWeight.w900,
-        letterSpacing: -1.0,
+  static TextStyle get bodyMd => _bodyFamily.copyWith(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        height: 24 / 16,
       );
+
+  static TextStyle get bodySm => _bodyFamily.copyWith(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        height: 20 / 14,
+      );
+
+  // --- UI Elements (Inter) ---
+  
+  static TextStyle get labelMd => _bodyFamily.copyWith(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        height: 16 / 12,
+        letterSpacing: 0.05 * 12,
+      );
+
+  // Legacy mappings to keep existing code compiling before it's updated
+  static TextStyle get h1 => headlineLg;
+  static TextStyle get h2 => headlineMd;
+  static TextStyle get h3 => headlineMd.copyWith(fontSize: 20);
+  static TextStyle get subtitle => bodyLg.copyWith(color: AppColors.onSurfaceVariant);
+  static TextStyle get bodyLarge => bodyLg;
+  static TextStyle get bodyMedium => bodyMd;
+  static TextStyle get bodySmall => bodySm.copyWith(color: AppColors.outline);
+  static TextStyle get buttonText => headlineMd.copyWith(fontSize: 16);
+  static TextStyle get labelText => labelMd;
+  static TextStyle get cardTitle => headlineMd.copyWith(fontSize: 18);
+  static TextStyle get statsNumber => display;
 }

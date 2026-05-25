@@ -11,9 +11,10 @@ import '../../features/onboarding/screens/invite_screen.dart';
 import '../../features/onboarding/screens/solo_onboarding_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/checkin/screens/checkin_screen.dart';
-import '../theme/colors.dart';
-import '../theme/typography.dart';
-import '../../shared/widgets/glass_card.dart';
+import '../../features/history/screens/history_screen.dart';
+import '../../features/settings/screens/settings_screen.dart';
+import '../../features/splash/screens/splash_screen.dart';
+import '../../shared/widgets/bottom_nav_shell.dart';
 
 part 'app_router.g.dart';
 
@@ -85,7 +86,6 @@ GoRouter appRouter(AppRouterRef ref) {
         return AppRoutes.invite;
       }
 
-      // Couple is complete
       if (isGoingToLogin || isGoingToInvite || state.matchedLocation == AppRoutes.splash) {
         return AppRoutes.dashboard;
       }
@@ -110,20 +110,27 @@ GoRouter appRouter(AppRouterRef ref) {
         builder: (context, state) => const InviteScreen(),
       ),
       GoRoute(
-        path: AppRoutes.dashboard,
-        builder: (context, state) => const DashboardScreen(),
-      ),
-      GoRoute(
         path: AppRoutes.checkin,
         builder: (context, state) => const CheckinScreen(),
       ),
-      GoRoute(
-        path: AppRoutes.history,
-        builder: (context, state) => const HistoryPlaceholderScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.settings,
-        builder: (context, state) => const SettingsPlaceholderScreen(),
+      ShellRoute(
+        builder: (context, state, child) {
+          return BottomNavShell(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: AppRoutes.dashboard,
+            pageBuilder: (context, state) => const NoTransitionPage(child: DashboardScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.history,
+            pageBuilder: (context, state) => const NoTransitionPage(child: HistoryScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.settings,
+            pageBuilder: (context, state) => const NoTransitionPage(child: SettingsScreen()),
+          ),
+        ],
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
@@ -131,149 +138,5 @@ GoRouter appRouter(AppRouterRef ref) {
         child: Text('Page not found: ${state.error}'),
       ),
     ),
-  );
-}
-
-// --- Placeholders for remaining screens ---
-
-class PremiumPlaceholderScreen extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const PremiumPlaceholderScreen({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          Positioned(
-            top: -100, right: -100,
-            child: Container(
-              width: 300, height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: AppColors.primary.withValues(alpha: 0.15), blurRadius: 100, spreadRadius: 50),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -100, left: -100,
-            child: Container(
-              width: 300, height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: AppColors.secondary.withValues(alpha: 0.15), blurRadius: 100, spreadRadius: 50),
-                ],
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: GlassCard(
-                  padding: const EdgeInsets.all(32),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.surfaceElevated,
-                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.5),
-                        ),
-                        child: Icon(icon, size: 40, color: AppColors.primary),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(title, style: AppTypography.h2, textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      Text(subtitle, style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-}
-
-class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-    );
-  }
-}
-
-class OnboardingPlaceholderScreen extends StatelessWidget {
-  const OnboardingPlaceholderScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const PremiumPlaceholderScreen(
-    title: 'Setup Your Ritual',
-    subtitle: 'Configure check-in triggers, choose custom notification hours, and personalize your theme.',
-    icon: Icons.tune_rounded,
-  );
-}
-
-class DashboardPlaceholderScreen extends StatelessWidget {
-  const DashboardPlaceholderScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const PremiumPlaceholderScreen(
-    title: 'Partner Dashboard',
-    subtitle: 'View real-time connection status, today\'s daily check-in prompt, and streak progress.',
-    icon: Icons.dashboard_rounded,
-  );
-}
-
-class CheckInPlaceholderScreen extends StatelessWidget {
-  const CheckInPlaceholderScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const PremiumPlaceholderScreen(
-    title: 'Daily Check-In',
-    subtitle: 'How is your heart feeling today? Rate affection, stress, energy, and log your emotions.',
-    icon: Icons.edit_note_rounded,
-  );
-}
-
-class HistoryPlaceholderScreen extends StatelessWidget {
-  const HistoryPlaceholderScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const PremiumPlaceholderScreen(
-    title: 'Relationship Timeline',
-    subtitle: 'Explore past check-ins, joint mood trends, and monthly AI insights.',
-    icon: Icons.history_rounded,
-  );
-}
-
-class SettingsPlaceholderScreen extends StatelessWidget {
-  const SettingsPlaceholderScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const PremiumPlaceholderScreen(
-    title: 'Account & Settings',
-    subtitle: 'Manage your profile, partner link, daily reminders, and subscription status.',
-    icon: Icons.settings_rounded,
   );
 }
