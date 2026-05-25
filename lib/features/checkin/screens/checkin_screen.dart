@@ -31,6 +31,22 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final existingCheckin = ref.read(todayCheckinProvider).valueOrNull;
+      if (existingCheckin != null) {
+        setState(() {
+          _energyScore = existingCheckin.energyScore;
+          _selectedEmoji = existingCheckin.moodEmoji;
+          _moodLabel = existingCheckin.moodLabel;
+          _thoughtsController.text = existingCheckin.journalNote ?? '';
+        });
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _thoughtsController.dispose();
     super.dispose();

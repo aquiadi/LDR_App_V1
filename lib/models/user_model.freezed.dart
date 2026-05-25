@@ -37,6 +37,8 @@ mixin _$UserModel {
   String get timezone => throw _privateConstructorUsedError;
   @JsonKey(name: 'premium_tier')
   bool get premiumTier => throw _privateConstructorUsedError;
+  @JsonKey(name: 'last_seen')
+  DateTime? get lastSeen => throw _privateConstructorUsedError;
 
   /// Serializes this UserModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -63,7 +65,8 @@ abstract class $UserModelCopyWith<$Res> {
       @JsonKey(name: 'couple_id') String? coupleId,
       @JsonKey(name: 'fcm_token') String? fcmToken,
       String timezone,
-      @JsonKey(name: 'premium_tier') bool premiumTier});
+      @JsonKey(name: 'premium_tier') bool premiumTier,
+      @JsonKey(name: 'last_seen') DateTime? lastSeen});
 }
 
 /// @nodoc
@@ -91,6 +94,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? fcmToken = freezed,
     Object? timezone = null,
     Object? premiumTier = null,
+    Object? lastSeen = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -133,6 +137,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.premiumTier
           : premiumTier // ignore: cast_nullable_to_non_nullable
               as bool,
+      lastSeen: freezed == lastSeen
+          ? _value.lastSeen
+          : lastSeen // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ) as $Val);
   }
 }
@@ -155,7 +163,8 @@ abstract class _$$UserModelImplCopyWith<$Res>
       @JsonKey(name: 'couple_id') String? coupleId,
       @JsonKey(name: 'fcm_token') String? fcmToken,
       String timezone,
-      @JsonKey(name: 'premium_tier') bool premiumTier});
+      @JsonKey(name: 'premium_tier') bool premiumTier,
+      @JsonKey(name: 'last_seen') DateTime? lastSeen});
 }
 
 /// @nodoc
@@ -181,6 +190,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? fcmToken = freezed,
     Object? timezone = null,
     Object? premiumTier = null,
+    Object? lastSeen = freezed,
   }) {
     return _then(_$UserModelImpl(
       id: null == id
@@ -223,6 +233,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.premiumTier
           : premiumTier // ignore: cast_nullable_to_non_nullable
               as bool,
+      lastSeen: freezed == lastSeen
+          ? _value.lastSeen
+          : lastSeen // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -240,7 +254,8 @@ class _$UserModelImpl implements _UserModel {
       @JsonKey(name: 'couple_id') this.coupleId,
       @JsonKey(name: 'fcm_token') this.fcmToken,
       required this.timezone,
-      @JsonKey(name: 'premium_tier') required this.premiumTier});
+      @JsonKey(name: 'premium_tier') required this.premiumTier,
+      @JsonKey(name: 'last_seen') this.lastSeen});
 
   factory _$UserModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserModelImplFromJson(json);
@@ -272,10 +287,13 @@ class _$UserModelImpl implements _UserModel {
   @override
   @JsonKey(name: 'premium_tier')
   final bool premiumTier;
+  @override
+  @JsonKey(name: 'last_seen')
+  final DateTime? lastSeen;
 
   @override
   String toString() {
-    return 'UserModel(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, email: $email, displayName: $displayName, avatarUrl: $avatarUrl, coupleId: $coupleId, fcmToken: $fcmToken, timezone: $timezone, premiumTier: $premiumTier)';
+    return 'UserModel(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, email: $email, displayName: $displayName, avatarUrl: $avatarUrl, coupleId: $coupleId, fcmToken: $fcmToken, timezone: $timezone, premiumTier: $premiumTier, lastSeen: $lastSeen)';
   }
 
   @override
@@ -300,13 +318,26 @@ class _$UserModelImpl implements _UserModel {
             (identical(other.timezone, timezone) ||
                 other.timezone == timezone) &&
             (identical(other.premiumTier, premiumTier) ||
-                other.premiumTier == premiumTier));
+                other.premiumTier == premiumTier) &&
+            (identical(other.lastSeen, lastSeen) ||
+                other.lastSeen == lastSeen));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt, email,
-      displayName, avatarUrl, coupleId, fcmToken, timezone, premiumTier);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      createdAt,
+      updatedAt,
+      email,
+      displayName,
+      avatarUrl,
+      coupleId,
+      fcmToken,
+      timezone,
+      premiumTier,
+      lastSeen);
 
   /// Create a copy of UserModel
   /// with the given fields replaced by the non-null parameter values.
@@ -326,17 +357,17 @@ class _$UserModelImpl implements _UserModel {
 
 abstract class _UserModel implements UserModel {
   const factory _UserModel(
-          {required final String id,
-          @JsonKey(name: 'created_at') required final DateTime createdAt,
-          @JsonKey(name: 'updated_at') required final DateTime updatedAt,
-          required final String email,
-          @JsonKey(name: 'display_name') final String? displayName,
-          @JsonKey(name: 'avatar_url') final String? avatarUrl,
-          @JsonKey(name: 'couple_id') final String? coupleId,
-          @JsonKey(name: 'fcm_token') final String? fcmToken,
-          required final String timezone,
-          @JsonKey(name: 'premium_tier') required final bool premiumTier}) =
-      _$UserModelImpl;
+      {required final String id,
+      @JsonKey(name: 'created_at') required final DateTime createdAt,
+      @JsonKey(name: 'updated_at') required final DateTime updatedAt,
+      required final String email,
+      @JsonKey(name: 'display_name') final String? displayName,
+      @JsonKey(name: 'avatar_url') final String? avatarUrl,
+      @JsonKey(name: 'couple_id') final String? coupleId,
+      @JsonKey(name: 'fcm_token') final String? fcmToken,
+      required final String timezone,
+      @JsonKey(name: 'premium_tier') required final bool premiumTier,
+      @JsonKey(name: 'last_seen') final DateTime? lastSeen}) = _$UserModelImpl;
 
   factory _UserModel.fromJson(Map<String, dynamic> json) =
       _$UserModelImpl.fromJson;
@@ -368,6 +399,9 @@ abstract class _UserModel implements UserModel {
   @override
   @JsonKey(name: 'premium_tier')
   bool get premiumTier;
+  @override
+  @JsonKey(name: 'last_seen')
+  DateTime? get lastSeen;
 
   /// Create a copy of UserModel
   /// with the given fields replaced by the non-null parameter values.

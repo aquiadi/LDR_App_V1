@@ -16,6 +16,7 @@ class UserModel with _$UserModel {
     @JsonKey(name: 'fcm_token') String? fcmToken,
     required String timezone,
     @JsonKey(name: 'premium_tier') required bool premiumTier,
+    @JsonKey(name: 'last_seen') DateTime? lastSeen,
   }) = _UserModel;
 
   factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);

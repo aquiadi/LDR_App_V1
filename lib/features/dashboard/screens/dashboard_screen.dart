@@ -11,6 +11,11 @@ import '../../auth/providers/partner_provider.dart';
 import '../../auth/providers/current_couple_provider.dart';
 import '../../checkin/providers/checkin_provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../history/providers/history_provider.dart';
+import '../providers/presence_provider.dart';
+import '../providers/ping_provider.dart';
+import '../providers/prompt_provider.dart';
+import '../providers/countdown_provider.dart';
 import '../../../models/checkin_model.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -44,6 +49,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final partnerCheckinAsync = ref.watch(partnerCheckinStreamProvider);
     final partnerAsync = ref.watch(partnerStreamProvider);
     final userAsync = ref.watch(currentUserProvider);
+    final streakAsync = ref.watch(syncStreakProvider);
+    final currentPrompt = ref.watch(dailyPromptProvider);
+    final countdownAsync = ref.watch(nextCountdownProvider);
+    
+    // Initialize presence tracking for this user
+    ref.watch(presenceControllerProvider);
+
+    final isPartnerOnline = ref.watch(partnerPresenceStreamProvider).valueOrNull ?? false;
+    final isPingCooldown = ref.watch(pingControllerProvider);
+
+    // Listen to incoming pings to show a SnackBar
+    ref.listen<AsyncValue<Map<String, dynamic>>>(incomingPingStreamProvider, (previous, next) {
+      final data = next.valueOrNull;
+      if (data != null && data.isNotEmpty) {
+        // Show ping animation or snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.favorite_rounded, color: AppColors.error),
+                const SizedBox(width: 12),
+                Text("${partnerAsync.valueOrNull?.displayName ?? 'Partner'} is thinking of you!"),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: AppColors.surfaceVariant,
+            elevation: 4,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
 
     final user = userAsync.valueOrNull;
     final partner = partnerAsync.valueOrNull;
@@ -60,13 +98,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: ListView(
             padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 120),
             children: [
-              _buildPartnerStatusCard(partner, partnerCheckinAsync),
+              _buildPartnerStatusCard(partner, partnerCheckinAsync, isPartnerOnline),
               const SizedBox(height: 16),
-              _buildBentoGrid(todayCheckinAsync, partnerCheckinAsync, partner),
+              _buildBentoGrid(todayCheckinAsync, partnerCheckinAsync, partner, streakAsync),
               const SizedBox(height: 16),
-              _buildDailyPromptCard(todayCheckinAsync),
+              _buildDailyPromptCard(todayCheckinAsync, currentPrompt),
               const SizedBox(height: 16),
-              _buildUpcomingMilestone(),
+              _buildInteractionFooter(partner, isPingCooldown, ref),
+              const SizedBox(height: 16),
+              _buildUpcomingMilestone(countdownAsync),
             ],
           ),
         ),
@@ -118,10 +158,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPartnerStatusCard(partner, AsyncValue<CheckinModel?> partnerCheckinAsync) {
+  Widget _buildPartnerStatusCard(partner, AsyncValue<CheckinModel?> partnerCheckinAsync, bool isPartnerOnline) {
     final partnerName = partner?.displayName ?? 'Partner';
     final partnerAvatar = partner?.avatarUrl;
-    final partnerTime = partner?.timezone ?? 'Unknown Time';
+    
+    // Format last seen or active status
+    String statusText = 'OFFLINE';
+    Color statusColor = AppColors.outline;
+    
+    if (isPartnerOnline) {
+      statusText = 'ACTIVE NOW';
+      statusColor = AppColors.primary;
+    } else if (partner != null && partner.lastSeen != null) {
+      final diff = DateTime.now().difference(partner.lastSeen!);
+      if (diff.inMinutes < 60) {
+        statusText = 'ACTIVE ${diff.inMinutes}M AGO';
+      } else if (diff.inHours < 24) {
+        statusText = 'ACTIVE ${diff.inHours}H AGO';
+      } else {
+        statusText = 'ACTIVE ${diff.inDays}D AGO';
+      }
+    }
 
     return GlassCard(
       padding: const EdgeInsets.all(24),
@@ -153,37 +210,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${partnerName.toUpperCase()} IS ACTIVE', style: AppTypography.labelMd.copyWith(color: AppColors.primary, letterSpacing: 1.5)),
+                    Text('${partnerName.toUpperCase()} • $statusText', style: AppTypography.labelMd.copyWith(color: statusColor, letterSpacing: 1.5)),
                     const SizedBox(height: 4),
-                    Text('8:42 PM • $partnerTime', style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
+                    Text(partner?.timezone ?? 'Unknown Time', style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
                   ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _triggerThinking,
-              icon: _thinkingOfYouActive 
-                  ? const SizedBox.shrink()
-                  : const Icon(Icons.favorite_rounded, color: AppColors.onPrimaryContainer),
-              label: Text(_thinkingOfYouActive ? 'Sent!' : 'Thinking of you'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryContainer,
-                foregroundColor: AppColors.onPrimaryContainer,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBentoGrid(AsyncValue<CheckinModel?> myCheckinAsync, AsyncValue<CheckinModel?> partnerCheckinAsync, partner) {
+  Widget _buildInteractionFooter(partner, bool isPingCooldown, WidgetRef ref) {
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: isPingCooldown || partner == null ? null : () {
+              ref.read(pingControllerProvider.notifier).sendPing(partner.id, partner.coupleId!);
+            },
+            icon: isPingCooldown 
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.favorite_rounded),
+            label: Text(isPingCooldown ? 'Sending...' : 'Thinking of you'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.3),
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBentoGrid(AsyncValue<CheckinModel?> myCheckinAsync, AsyncValue<CheckinModel?> partnerCheckinAsync, partner, AsyncValue<Map<String, int>> streakAsync) {
+    final streakData = streakAsync.valueOrNull ?? {'current': 0, 'longest': 0};
+    
     return Row(
       children: [
         Expanded(
@@ -204,8 +270,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text('14 Days', style: AppTypography.headlineMd.copyWith(color: AppColors.primary)),
+                Text('${streakData['current']} Days', style: AppTypography.headlineMd.copyWith(color: AppColors.primary)),
                 Text('SYNC STREAK', style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
+                if (streakData['longest']! > streakData['current']!)
+                  Text('Best: ${streakData['longest']}', style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
               ],
             ),
           ),
@@ -240,26 +308,127 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildPartnerMood(CheckinModel checkin, partner) {
-    return GlassCard(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.tertiaryContainer.withValues(alpha: 0.2),
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          isScrollControlled: true,
+          builder: (context) => _buildPartnerCheckinModal(checkin, partner),
+        );
+      },
+      child: GlassCard(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.tertiaryContainer.withValues(alpha: 0.2),
+              ),
+              child: Center(
+                child: Icon(_getIconData(checkin.moodEmoji), color: AppColors.tertiary, size: 32),
+              ),
             ),
-            child: Center(
-              child: Icon(_getIconData(checkin.moodEmoji), color: AppColors.tertiary, size: 32),
+            const SizedBox(height: 12),
+            Text(checkin.moodLabel, style: AppTypography.headlineMd.copyWith(color: AppColors.tertiary)),
+            Text("${partner?.displayName?.toUpperCase() ?? 'PARTNER'}'S MOOD", style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartnerCheckinModal(CheckinModel checkin, partner) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      padding: const EdgeInsets.all(32),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 48,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(checkin.moodLabel, style: AppTypography.headlineMd.copyWith(color: AppColors.tertiary)),
-          Text("${partner?.displayName?.toUpperCase() ?? 'PARTNER'}'S MOOD", style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
-        ],
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.tertiaryContainer.withValues(alpha: 0.2),
+                  ),
+                  child: Center(
+                    child: Icon(_getIconData(checkin.moodEmoji), color: AppColors.tertiary, size: 32),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(checkin.moodLabel, style: AppTypography.headlineLg),
+                      Text("${partner?.displayName ?? 'Partner'}'s Mood", style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            Text('ENERGY LEVEL', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: checkin.energyScore / 10,
+                      minHeight: 8,
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text('${checkin.energyScore}/10', style: AppTypography.labelMd.copyWith(color: AppColors.primary)),
+              ],
+            ),
+            if (checkin.journalNote != null && checkin.journalNote!.isNotEmpty) ...[
+              const SizedBox(height: 32),
+              Text('THOUGHTS', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
+              const SizedBox(height: 8),
+              Text(checkin.journalNote!, style: AppTypography.bodyLg.copyWith(height: 1.5)),
+            ],
+            const SizedBox(height: 32),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -289,11 +458,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildDailyPromptCard(AsyncValue<CheckinModel?> myCheckinAsync) {
+  Widget _buildDailyPromptCard(AsyncValue<CheckinModel?> myCheckinAsync, String currentPrompt) {
     final bool hasCheckedIn = myCheckinAsync.valueOrNull != null;
     
     return GestureDetector(
-      onTap: hasCheckedIn ? null : () => context.push('/checkin'),
+      onTap: () => context.push('/checkin'),
       child: GlassCard(
         padding: EdgeInsets.zero,
         child: Column(
@@ -339,7 +508,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: Text('DAILY PROMPT', style: AppTypography.labelMd.copyWith(color: Colors.white)),
                         ),
                         const SizedBox(height: 8),
-                        Text('What\'s one thing you miss about our last visit?', style: AppTypography.headlineMd.copyWith(height: 1.2)),
+                        Text(currentPrompt, style: AppTypography.headlineMd.copyWith(height: 1.2)),
                       ],
                     ),
                   ),
@@ -352,7 +521,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('You checked in today. Your partner can now see how you feel.', style: AppTypography.bodyMd),
+                    Text('You checked in today. Tap to update your mood or answer.', style: AppTypography.bodyMd),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -400,7 +569,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildUpcomingMilestone() {
+  Widget _buildUpcomingMilestone(AsyncValue<CountdownEvent?> countdownAsync) {
+    final event = countdownAsync.valueOrNull;
+    if (event == null) return const SizedBox.shrink(); // Hide if no event
+    
+    final diff = event.date.difference(DateTime.now());
+    final days = diff.inDays;
+    final hours = diff.inHours % 24;
+
     return GlassCard(
       padding: const EdgeInsets.all(24),
       child: Row(
@@ -411,8 +587,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 Text('COUNTDOWN', style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
                 const SizedBox(height: 4),
-                Text('Paris Reunion', style: AppTypography.headlineMd),
-                Text('In 22 Days, 4 Hours', style: AppTypography.bodySm.copyWith(color: AppColors.primary)),
+                Text(event.title, style: AppTypography.headlineMd),
+                Text('In $days Days, $hours Hours', style: AppTypography.bodySm.copyWith(color: AppColors.primary)),
               ],
             ),
           ),
@@ -427,7 +603,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('22', style: AppTypography.headlineMd.copyWith(height: 1)),
+                Text('$days', style: AppTypography.headlineMd.copyWith(height: 1)),
                 Text('DAYS', style: AppTypography.labelMd.copyWith(fontSize: 10, color: AppColors.outline)),
               ],
             ),

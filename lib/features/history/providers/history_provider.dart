@@ -23,40 +23,56 @@ Future<List<CheckinModel>> historyCheckins(HistoryCheckinsRef ref) async {
 }
 
 @riverpod
-Future<int> syncStreak(SyncStreakRef ref) async {
+Future<Map<String, int>> syncStreak(SyncStreakRef ref) async {
   final checkins = await ref.watch(historyCheckinsProvider.future);
-  if (checkins.isEmpty) return 0;
+  if (checkins.isEmpty) return {'current': 0, 'longest': 0};
   
-  // Real logic: iterate backward to count consecutive days
-  int streak = 0;
+  // Group checkins by date (ignoring time)
+  final Set<DateTime> checkinDays = {};
+  for (final c in checkins) {
+    checkinDays.add(DateTime(c.createdAt.year, c.createdAt.month, c.createdAt.day));
+  }
+  
+  final sortedDays = checkinDays.toList()..sort((a, b) => b.compareTo(a));
+
+  int currentStreak = 0;
+  int longestStreak = 0;
+  int tempStreak = 0;
   DateTime? lastDate;
 
-  for (final checkin in checkins) {
-    // Only count if both checkins are there or just base it on existence.
-    // Real implementation would group by day and check if partner also checked in.
-    // For MVP, we count consecutive days this user has checked in.
-    final currentDay = DateTime(checkin.createdAt.year, checkin.createdAt.month, checkin.createdAt.day);
+  final todayMidnight = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
+  for (int i = 0; i < sortedDays.length; i++) {
+    final currentDay = sortedDays[i];
     
     if (lastDate == null) {
-      final today = DateTime.now();
-      final todayMidnight = DateTime(today.year, today.month, today.day);
-      
       if (currentDay == todayMidnight || currentDay == todayMidnight.subtract(const Duration(days: 1))) {
-        streak++;
-        lastDate = currentDay;
+        currentStreak = 1;
+        tempStreak = 1;
       } else {
-        break; // Streak broken
+        tempStreak = 1;
       }
     } else {
       final diff = lastDate.difference(currentDay).inDays;
       if (diff == 1) {
-        streak++;
-        lastDate = currentDay;
-      } else if (diff > 1) {
-        break; // Streak broken
+        tempStreak++;
+        if (currentStreak > 0 && lastDate == sortedDays[i - 1]) {
+           currentStreak++;
+        }
+      } else {
+        // Streak broken
+        tempStreak = 1; 
       }
     }
+    
+    if (tempStreak > longestStreak) {
+      longestStreak = tempStreak;
+    }
+    lastDate = currentDay;
   }
   
-  return streak;
+  return {
+    'current': currentStreak,
+    'longest': longestStreak,
+  };
 }

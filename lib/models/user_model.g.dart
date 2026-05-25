@@ -18,6 +18,9 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       fcmToken: json['fcm_token'] as String?,
       timezone: json['timezone'] as String,
       premiumTier: json['premium_tier'] as bool,
+      lastSeen: json['last_seen'] == null
+          ? null
+          : DateTime.parse(json['last_seen'] as String),
     );
 
 Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
@@ -32,4 +35,5 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'fcm_token': instance.fcmToken,
       'timezone': instance.timezone,
       'premium_tier': instance.premiumTier,
+      'last_seen': instance.lastSeen?.toIso8601String(),
     };

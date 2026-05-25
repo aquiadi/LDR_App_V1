@@ -43,7 +43,7 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStreakHero(AsyncValue<int> streakAsync) {
+  Widget _buildStreakHero(AsyncValue<Map<String, int>> streakAsync) {
     return GlassCard(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -68,7 +68,7 @@ class HistoryScreen extends ConsumerWidget {
                   Icon(Icons.local_fire_department_rounded, color: AppColors.primaryContainer, size: 32),
                   const SizedBox(height: 4),
                   streakAsync.when(
-                    data: (streak) => Text(streak.toString(), style: AppTypography.display.copyWith(color: AppColors.primaryContainer, height: 1.1)),
+                    data: (streak) => Text(streak['current'].toString(), style: AppTypography.display.copyWith(color: AppColors.primaryContainer, height: 1.1)),
                     loading: () => const SizedBox(height: 40, width: 40, child: CircularProgressIndicator()),
                     error: (_, __) => const Text('?'),
                   ),

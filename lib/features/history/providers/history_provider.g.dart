@@ -24,11 +24,11 @@ final historyCheckinsProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef HistoryCheckinsRef = AutoDisposeFutureProviderRef<List<CheckinModel>>;
-String _$syncStreakHash() => r'9c1fe8f9e8b92f61c72928f03e26bf4fca8249ea';
+String _$syncStreakHash() => r'04d65153fa6eca3719db0ef19d94d71edaaa4ff5';
 
 /// See also [syncStreak].
 @ProviderFor(syncStreak)
-final syncStreakProvider = AutoDisposeFutureProvider<int>.internal(
+final syncStreakProvider = AutoDisposeFutureProvider<Map<String, int>>.internal(
   syncStreak,
   name: r'syncStreakProvider',
   debugGetCreateSourceHash:
@@ -39,6 +39,6 @@ final syncStreakProvider = AutoDisposeFutureProvider<int>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef SyncStreakRef = AutoDisposeFutureProviderRef<int>;
+typedef SyncStreakRef = AutoDisposeFutureProviderRef<Map<String, int>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

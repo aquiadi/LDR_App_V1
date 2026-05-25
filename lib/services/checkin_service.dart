@@ -47,7 +47,9 @@ class CheckinService {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not logged in');
 
-    final response = await _supabase.from('daily_checkins').insert({
+    final existingCheckin = await getTodayCheckin(coupleId);
+    
+    final payload = {
       'user_id': user.id,
       'couple_id': coupleId,
       'mood_emoji': moodEmoji,
@@ -56,7 +58,14 @@ class CheckinService {
       'stress_score': stressScore,
       'energy_score': energyScore,
       'journal_note': journalNote,
-    }).select().single();
+    };
+
+    dynamic response;
+    if (existingCheckin != null) {
+      response = await _supabase.from('daily_checkins').update(payload).eq('id', existingCheckin.id).select().single();
+    } else {
+      response = await _supabase.from('daily_checkins').insert(payload).select().single();
+    }
 
     return CheckinModel.fromJson(response);
   }
