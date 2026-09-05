@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/supabase_client.dart';
@@ -44,7 +45,7 @@ class PingController extends _$PingController {
     } catch (e) {
       // Revert cooldown on error
       state = false;
-      print('Error sending ping: $e');
+      debugPrint('Error sending ping: $e');
     }
   }
 }

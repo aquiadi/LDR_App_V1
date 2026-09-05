@@ -7,7 +7,7 @@ part of 'presence_provider.dart';
 // **************************************************************************
 
 String _$partnerPresenceStreamHash() =>
-    r'214eb350c496c28068f1f971c115081d2026fcac';
+    r'cea1e8335d08fd41757f7e9c311325a00119d887';
 
 /// See also [partnerPresenceStream].
 @ProviderFor(partnerPresenceStream)
@@ -25,7 +25,7 @@ final partnerPresenceStreamProvider = AutoDisposeStreamProvider<bool>.internal(
 // ignore: unused_element
 typedef PartnerPresenceStreamRef = AutoDisposeStreamProviderRef<bool>;
 String _$presenceControllerHash() =>
-    r'e37f7c44f42a1f2d43f84df318fae4e70a25597e';
+    r'c79e23b16d3bc781da85c73e37ede738e8bfc718';
 
 /// See also [PresenceController].
 @ProviderFor(PresenceController)

@@ -39,21 +39,36 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
   }
 
   Future<void> _finishOnboarding() async {
-    setState(() {
-      _isCreating = true;
-    });
-    
-    // Call generate invite with the collected data
+    if (_isCreating) return;
+    setState(() => _isCreating = true);
+
     await ref.read(inviteControllerProvider.notifier).generateInvite(
-      spaceName: _spaceNameController.text.isNotEmpty ? _spaceNameController.text : null,
-      anniversaryDate: _anniversaryDate,
-      welcomeMessage: _welcomeMessageController.text.isNotEmpty ? _welcomeMessageController.text : null,
-    );
-    
-    // Navigate to the invite screen to show the generated code
-    if (mounted) {
-      context.go('/invite');
+          spaceName: _spaceNameController.text.trim().isNotEmpty
+              ? _spaceNameController.text.trim()
+              : null,
+          anniversaryDate: _anniversaryDate,
+          welcomeMessage: _welcomeMessageController.text.trim().isNotEmpty
+              ? _welcomeMessageController.text.trim()
+              : null,
+        );
+
+    if (!mounted) return;
+    setState(() => _isCreating = false);
+
+    // Previously this navigated unconditionally, so a failed creation landed
+    // the user on an invite screen with no code and no explanation.
+    final result = ref.read(inviteControllerProvider);
+    if (result.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Couldn't create your space: ${result.error}"),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
     }
+    context.go('/invite');
   }
 
   @override

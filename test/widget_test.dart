@@ -1,21 +1,22 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ldr_app/main.dart';
 
 void main() {
-  testWidgets('Configuration screen smoke test', (WidgetTester tester) async {
-    // Build our app with isConfigured: false.
+  testWidgets('shows setup guidance when Supabase keys are absent',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const LdrApp(isConfigured: false));
 
-    // Verify that the ConfigurationErrorScreen is shown.
     expect(find.text('Sync Setting Required'), findsOneWidget);
-    expect(find.text('Enter Sandbox Preview'), findsOneWidget);
+    expect(find.text('How to run locally:'), findsOneWidget);
+  });
+
+  testWidgets('surfaces the specific configuration error', (WidgetTester tester) async {
+    await tester.pumpWidget(const LdrApp(
+      isConfigured: false,
+      configErrorMessage: 'Something specific went wrong',
+    ));
+
+    expect(find.text('Something specific went wrong'), findsOneWidget);
   });
 }

@@ -6,7 +6,7 @@ part of 'prompt_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dailyPromptHash() => r'6df57e491e9ccdbd264f4f1c2423de7f26efdca9';
+String _$dailyPromptHash() => r'400d18a1479c7f1bc6d26158658c179fcff398eb';
 
 /// See also [dailyPrompt].
 @ProviderFor(dailyPrompt)

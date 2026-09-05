@@ -6,7 +6,7 @@ part of 'history_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$historyCheckinsHash() => r'f3c74d8b480c50b3bdc63760b5df3abcd73f1b28';
+String _$historyCheckinsHash() => r'fd9bbc0e20b2cf1639357ab0046ad8f0b3840c64';
 
 /// See also [historyCheckins].
 @ProviderFor(historyCheckins)
@@ -24,7 +24,7 @@ final historyCheckinsProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef HistoryCheckinsRef = AutoDisposeFutureProviderRef<List<CheckinModel>>;
-String _$syncStreakHash() => r'04d65153fa6eca3719db0ef19d94d71edaaa4ff5';
+String _$syncStreakHash() => r'62da5166c25592226f3d03a21cf274369c8a8b25';
 
 /// See also [syncStreak].
 @ProviderFor(syncStreak)

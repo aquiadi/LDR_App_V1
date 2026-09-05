@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../shared/widgets/ambient_background.dart';
@@ -46,14 +47,14 @@ class SettingsScreen extends ConsumerWidget {
                 _buildSettingsRow(
                   icon: Icons.calendar_today_rounded,
                   title: 'Anniversary',
-                  value: couple?.anniversaryDate != null 
-                    ? "${couple!.anniversaryDate!.month}/${couple.anniversaryDate!.day}/${couple.anniversaryDate!.year}"
-                    : 'Not set',
+                  value: couple?.anniversaryDate == null
+                      ? 'Not set'
+                      : DateFormat.yMMMMd().format(couple!.anniversaryDate!),
                 ),
                 _buildDivider(),
                 _buildSettingsRow(
                   icon: Icons.location_on_rounded,
-                  title: "${partner?.displayName ?? 'Partner'}'s Timezone",
+                  title: '${partner?.displayName ?? 'Partner'}\'s Timezone',
                   value: partner?.timezone ?? 'Unknown',
                 ),
                 _buildDivider(),

@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
+import '../../../shared/mood_catalog.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/accent_gradient_button.dart';
 import '../providers/checkin_provider.dart';
+import '../../../services/checkin_service.dart' show kMinMoodScore, kMaxMoodScore;
+import '../../auth/providers/partner_provider.dart';
 
 class CheckinScreen extends ConsumerStatefulWidget {
   const CheckinScreen({super.key});
@@ -17,18 +20,10 @@ class CheckinScreen extends ConsumerStatefulWidget {
 
 class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   int _energyScore = 5;
+  bool _submitting = false;
   String _selectedEmoji = 'sentiment_very_satisfied'; // We use icons now, mapped to string
   String _moodLabel = 'Joyful';
   final _thoughtsController = TextEditingController();
-
-  final List<Map<String, dynamic>> _moods = [
-    {'icon': Icons.sentiment_very_satisfied_rounded, 'id': 'sentiment_very_satisfied', 'label': 'Joyful'},
-    {'icon': Icons.self_improvement_rounded, 'id': 'self_improvement', 'label': 'Calm'},
-    {'icon': Icons.favorite_rounded, 'id': 'favorite', 'label': 'Loved'},
-    {'icon': Icons.bedtime_rounded, 'id': 'bedtime', 'label': 'Sleepy'},
-    {'icon': Icons.social_distance_rounded, 'id': 'distance', 'label': 'Missing'},
-    {'icon': Icons.cloud_rounded, 'id': 'cloud', 'label': 'Gloomy'},
-  ];
 
   @override
   void initState() {
@@ -52,18 +47,38 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
     super.dispose();
   }
 
-  void _submit() async {
-    // We map energy to the old scores for MVP compatibility if needed, 
-    // or just pass 5 for the missing ones.
+  Future<void> _submit() async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+
+    // Affection and stress are not yet surfaced in the UI; the midpoint is a
+    // deliberate neutral default rather than a placeholder to remove later.
     await ref.read(todayCheckinProvider.notifier).submitCheckin(
-      moodEmoji: _selectedEmoji,
-      moodLabel: _moodLabel,
-      affectionScore: 5, // Default for now
-      stressScore: 5,    // Default for now
-      energyScore: _energyScore,
-      journalNote: _thoughtsController.text.trim(),
-    );
-    if (mounted) context.pop();
+          moodEmoji: _selectedEmoji,
+          moodLabel: _moodLabel,
+          affectionScore: 5,
+          stressScore: 5,
+          energyScore: _energyScore,
+          journalNote: _thoughtsController.text.trim(),
+        );
+
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    // Only leave the screen when the write actually succeeded. Popping
+    // unconditionally made a failed check-in look like a successful one.
+    final result = ref.read(todayCheckinProvider);
+    if (result.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Couldn't save your check-in: ${result.error}"),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    context.pop();
   }
 
   String _getEnergyLabel() {
@@ -117,12 +132,10 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              color: AppColors.surfaceContainerHigh,
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
-              image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuA4OzT_GkmKrSjjuD2iNHNPpxOl20CamFvOxiClOcvOE0C-03JkxVYNsFp64zD0_AbPXJTVcJViy1vvHspT_BuBSHEyhouizsPeUfAa_R2Rfh7ie_vmp7N0xLGdeuGHM9COBeuUU7EpvUfqkaFdPIzuMxqcfPxwOK_cecx0K_tO28V1SzN-HHCxnosxYuywvqsc7ihXfeVGA4-Dwfz4VrDjIDY8aeMG9ohARSLmfBIA8kkTGVAO09840mDWymUeIxeRXb2BiJ9tDQmR'),
-                fit: BoxFit.cover,
-              ),
             ),
+            child: const Icon(Icons.favorite_rounded, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Text('LDR Sync', style: AppTypography.headlineMd.copyWith(color: AppColors.primary)),
@@ -141,11 +154,17 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   }
 
   Widget _buildCeremonialGreeting() {
+    final partnerName = ref.watch(partnerStreamProvider).valueOrNull?.displayName;
     return Column(
       children: [
         Text('Daily Check-In', style: AppTypography.headlineLgMobile),
         const SizedBox(height: 8),
-        Text('Tell Sarah how you\'re feeling today.', style: AppTypography.bodyMd.copyWith(color: AppColors.outline)),
+        Text(
+          partnerName == null
+              ? 'Share how you\'re feeling today.'
+              : 'Tell $partnerName how you\'re feeling today.',
+          style: AppTypography.bodyMd.copyWith(color: AppColors.outline),
+        ),
       ],
     );
   }
@@ -171,7 +190,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
           AccentGradientButton(
             text: 'Share Vibe',
             icon: Icons.send_rounded,
-            isLoading: checkinState.isLoading,
+            isLoading: checkinState.isLoading || _submitting,
             onPressed: _submit,
           ),
         ],
@@ -189,10 +208,12 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
           child: RotatedBox(
             quarterTurns: 3,
             child: Slider(
+              // Bounds mirror the database CHECK constraint. A 0 here used to
+              // be rejected by Postgres, losing the whole check-in.
               value: _energyScore.toDouble(),
-              min: 0,
-              max: 10,
-              divisions: 10,
+              min: kMinMoodScore.toDouble(),
+              max: kMaxMoodScore.toDouble(),
+              divisions: kMaxMoodScore - kMinMoodScore,
               activeColor: AppColors.primary,
               inactiveColor: Colors.white.withValues(alpha: 0.1),
               onChanged: (val) {
@@ -225,13 +246,13 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           childAspectRatio: 1.2,
-          children: _moods.map((mood) {
-            final isSelected = _selectedEmoji == mood['id'];
+          children: kMoodOptions.map((mood) {
+            final isSelected = _selectedEmoji == mood.id;
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  _selectedEmoji = mood['id'];
-                  _moodLabel = mood['label'];
+                  _selectedEmoji = mood.id;
+                  _moodLabel = mood.label;
                 });
               },
               child: AnimatedContainer(
@@ -246,9 +267,9 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(mood['icon'], color: AppColors.primary, size: 28),
+                    Icon(mood.icon, color: AppColors.primary, size: 28),
                     const SizedBox(height: 8),
-                    Text(mood['label'], style: AppTypography.labelMd),
+                    Text(mood.label, style: AppTypography.labelMd),
                   ],
                 ),
               ),

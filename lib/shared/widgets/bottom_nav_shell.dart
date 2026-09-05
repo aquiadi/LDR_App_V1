@@ -10,37 +10,21 @@ class BottomNavShell extends StatelessWidget {
 
   const BottomNavShell({super.key, required this.child});
 
+  static const List<String> _tabs = [
+    AppRoutes.dashboard,
+    AppRoutes.history,
+    AppRoutes.insights,
+    AppRoutes.settings,
+  ];
+
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
-    if (location.startsWith(AppRoutes.dashboard)) return 0;
-    if (location.startsWith(AppRoutes.history)) return 1;
-    // Chat is placeholder for now, returning 2 if it were implemented
-    if (location.startsWith(AppRoutes.settings)) return 3;
-    return 0;
+    final index = _tabs.indexWhere((path) => location.startsWith(path));
+    return index < 0 ? 0 : index;
   }
 
   void _onItemTapped(int index, BuildContext context) {
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.dashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.history);
-        break;
-      case 2:
-        // Placeholder for chat - could show a coming soon snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Chat feature coming soon!', style: AppTypography.bodySm),
-            backgroundColor: AppColors.surfaceContainerHighest,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        break;
-      case 3:
-        context.go(AppRoutes.settings);
-        break;
-    }
+    context.go(_tabs[index]);
   }
 
   @override
@@ -80,14 +64,14 @@ class BottomNavShell extends StatelessWidget {
                       _buildNavItem(
                         icon: Icons.calendar_today_rounded,
                         activeIcon: Icons.calendar_today_rounded,
-                        label: 'Dates', // Label from HTML
+                        label: 'Journey',
                         isActive: currentIndex == 1,
                         onTap: () => _onItemTapped(1, context),
                       ),
                       _buildNavItem(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        activeIcon: Icons.chat_bubble_rounded,
-                        label: 'Chat',
+                        icon: Icons.auto_awesome_outlined,
+                        activeIcon: Icons.auto_awesome_rounded,
+                        label: 'Insights',
                         isActive: currentIndex == 2,
                         onTap: () => _onItemTapped(2, context),
                       ),

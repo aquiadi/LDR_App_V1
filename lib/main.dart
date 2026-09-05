@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
@@ -8,6 +9,11 @@ import 'core/navigation/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Sora and Inter ship in assets/google_fonts/. Without this the package
+  // fetches them from fonts.gstatic.com on first paint, so a cold start with
+  // no network renders the entire UI without any text.
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // Retrieve environment variables
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -145,25 +151,6 @@ class ConfigurationErrorScreen extends StatelessWidget {
                       style: AppTypography.bodySmall.copyWith(height: 1.6),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Standard mock offline flow preview
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Mock Offline Flow requires active compiler keys.'),
-                      backgroundColor: AppColors.surfaceElevated,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.arrow_forward_rounded),
-                label: const Text('Enter Sandbox Preview'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.surface,
-                  foregroundColor: AppColors.textPrimary,
-                  side: const BorderSide(color: AppColors.border),
                 ),
               ),
             ],

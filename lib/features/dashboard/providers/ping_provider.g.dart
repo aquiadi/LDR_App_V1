@@ -26,7 +26,7 @@ final incomingPingStreamProvider =
 // ignore: unused_element
 typedef IncomingPingStreamRef
     = AutoDisposeStreamProviderRef<Map<String, dynamic>>;
-String _$pingControllerHash() => r'4d43dbc3de3f89fe61d7617a7e5f531a9567ec3b';
+String _$pingControllerHash() => r'27dfecf24c54a05ead5b9202624aec3d5be5a884';
 
 /// See also [PingController].
 @ProviderFor(PingController)

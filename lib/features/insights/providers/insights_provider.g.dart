@@ -6,7 +6,7 @@ part of 'insights_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$weeklyInsightsHash() => r'3c2b4ab4ce53f9456390f42120cf37764e24e175';
+String _$weeklyInsightsHash() => r'f38ac2dc2609411ae836934dd2ad91f7911b03ec';
 
 /// See also [weeklyInsights].
 @ProviderFor(weeklyInsights)

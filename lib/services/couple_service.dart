@@ -24,6 +24,12 @@ class CoupleService {
         8, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
   }
 
+  /// Creates a new shared space owned by the signed-in user.
+  ///
+  /// If the user already belongs to a *fully formed* couple this refuses
+  /// rather than proceeding: the previous implementation deleted the existing
+  /// couple row first, which cascaded away every check-in the pair had ever
+  /// written and silently unpaired the partner.
   Future<CoupleModel> createCouple({
     String? spaceName,
     DateTime? anniversaryDate,
@@ -33,39 +39,78 @@ class CoupleService {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Not logged in');
 
-    // For testing: Remove existing space if any, so user can recreate it
-    final userProfile = await getCurrentUserProfile();
-    if (userProfile?.coupleId != null) {
-      try {
-        await _supabase.from('users').update({'couple_id': null}).eq('id', user.id);
-        await _supabase.from('couples').delete().eq('id', userProfile!.coupleId!);
-      } catch (e) {
-        // Ignore deletion errors
+    final existing = await getCurrentCouple();
+    if (existing != null) {
+      if (existing.partner1Id != null && existing.partner2Id != null) {
+        throw Exception(
+          'You are already paired. Leave your current space before creating a new one.',
+        );
       }
+      // A space that is still waiting on a partner is simply reused, so the
+      // invite code the user may already have shared stays valid.
+      return existing;
     }
 
-    // Generate unique code (retry if collision occurs)
-    String inviteCode = _generateInviteCode();
-    
-    // Insert new couple
-    final response = await _supabase.from('couples').insert({
-      'invite_code': inviteCode,
-      'partner_1_id': user.id,
-      'is_active': true,
-      'space_name': spaceName,
-      'anniversary_date': anniversaryDate?.toIso8601String(),
-      'welcome_message': welcomeMessage,
-      'cover_photo_url': coverPhotoUrl,
-    }).select().single();
+    final couple = await _insertCoupleWithUniqueCode(
+      userId: user.id,
+      spaceName: spaceName,
+      anniversaryDate: anniversaryDate,
+      welcomeMessage: welcomeMessage,
+      coverPhotoUrl: coverPhotoUrl,
+    );
 
-    final couple = CoupleModel.fromJson(response);
-
-    // Update current user's couple_id
     await _supabase.from('users').update({
       'couple_id': couple.id,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', user.id);
 
     return couple;
+  }
+
+  /// `couples.invite_code` is UNIQUE, so a collision is a real (if unlikely)
+  /// outcome of an 8-character random code. Retry a bounded number of times
+  /// instead of surfacing a raw constraint violation.
+  Future<CoupleModel> _insertCoupleWithUniqueCode({
+    required String userId,
+    String? spaceName,
+    DateTime? anniversaryDate,
+    String? welcomeMessage,
+    String? coverPhotoUrl,
+  }) async {
+    const maxAttempts = 5;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        final response = await _supabase.from('couples').insert({
+          'invite_code': _generateInviteCode(),
+          'partner_1_id': userId,
+          'is_active': true,
+          'space_name': spaceName,
+          // anniversary_date is a DATE column; send a plain calendar date.
+          'anniversary_date':
+              anniversaryDate?.toIso8601String().split('T').first,
+          'welcome_message': welcomeMessage,
+          'cover_photo_url': coverPhotoUrl,
+        }).select().single();
+        return CoupleModel.fromJson(response);
+      } on PostgrestException catch (e) {
+        // 23505 = unique_violation
+        if (e.code == '23505' && attempt < maxAttempts) continue;
+        rethrow;
+      }
+    }
+    throw Exception('Could not allocate a unique invite code. Please try again.');
+  }
+
+  /// The couple the signed-in user currently belongs to, or null.
+  Future<CoupleModel?> getCurrentCouple() async {
+    final profile = await getCurrentUserProfile();
+    final coupleId = profile?.coupleId;
+    if (coupleId == null) return null;
+
+    final response =
+        await _supabase.from('couples').select().eq('id', coupleId).maybeSingle();
+    if (response == null) return null;
+    return CoupleModel.fromJson(response);
   }
 
   Future<CoupleModel> joinCouple(String inviteCode) async {
@@ -74,11 +119,13 @@ class CoupleService {
 
     try {
       final response = await _supabase.rpc('join_couple', params: {
-        'invite_code_input': inviteCode.toUpperCase(),
+        'invite_code_input': inviteCode.trim().toUpperCase(),
       });
 
-      final updatedCouple = CoupleModel.fromJson(response);
-      return updatedCouple;
+      if (response == null) {
+        throw Exception('Invalid invite code. Please check and try again.');
+      }
+      return CoupleModel.fromJson(Map<String, dynamic>.from(response as Map));
     } catch (e) {
       if (e.toString().contains('Invalid invite code')) {
         throw Exception('Invalid invite code. Please check and try again.');

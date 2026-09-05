@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../auth/providers/current_user_provider.dart';
 import '../../../core/network/supabase_client.dart';
@@ -20,14 +21,14 @@ Future<Map<String, dynamic>> weeklyInsights(WeeklyInsightsRef ref) async {
       return response.data as Map<String, dynamic>;
     }
   } catch (e) {
-    print('Error fetching insights: $e');
+    debugPrint('Error fetching insights: $e');
   }
 
   // Fallback if the function is not deployed or errors out
   return {
     'syncPercentage': 50,
     'trendData': [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0],
-    'catalystPrompt': "Send a voice note to check in with your partner.",
+    'catalystPrompt': 'Send a voice note to check in with your partner.',
     'tips': [
       {
         'icon': 'chat_bubble_outline',

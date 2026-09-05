@@ -45,3 +45,8 @@ app.*.map.json
 /android/app/release
 .env
 supabase/.env
+
+# Supabase CLI local state (was previously committed by accident)
+supabase/.temp/
+supabase/.branches/
+.supabase/

@@ -28,10 +28,11 @@ dependencies:
   fl_chart: ^0.66.0
 
   # Utility
+  cupertino_icons: ^1.0.8
   uuid: ^4.3.3
   shared_preferences: ^2.2.2
   freezed_annotation: ^2.4.1
-  json_annotation: ^4.8.1
+  json_annotation: ^4.9.0
 
 dev_dependencies:
   flutter_test:
@@ -49,3 +50,6 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    # Sora and Inter are bundled rather than fetched at runtime; see
+    # AppTypography for why. google_fonts resolves these by filename.
+    - assets/google_fonts/

@@ -1,14 +1,13 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/mood_catalog.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../auth/providers/current_user_provider.dart';
 import '../../auth/providers/partner_provider.dart';
-import '../../auth/providers/current_couple_provider.dart';
 import '../../checkin/providers/checkin_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../history/providers/history_provider.dart';
@@ -17,6 +16,7 @@ import '../providers/ping_provider.dart';
 import '../providers/prompt_provider.dart';
 import '../providers/countdown_provider.dart';
 import '../../../models/checkin_model.dart';
+import '../../../models/user_model.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -26,23 +26,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  bool _thinkingOfYouActive = false;
-
-  void _triggerThinking() {
-    setState(() {
-      _thinkingOfYouActive = true;
-    });
-    
-    // In MVP, this is a UI-only animation
-    Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _thinkingOfYouActive = false;
-        });
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final todayCheckinAsync = ref.watch(todayCheckinProvider);
@@ -92,8 +75,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         appBar: _buildHeader(user),
         body: RefreshIndicator(
           onRefresh: () async {
-            // ignore: unused_result
-            ref.refresh(todayCheckinProvider);
+            ref
+              ..invalidate(todayCheckinProvider)
+              ..invalidate(syncStreakProvider)
+              ..invalidate(historyCheckinsProvider)
+              ..invalidate(nextCountdownProvider);
+            await ref.read(todayCheckinProvider.future);
           },
           child: ListView(
             padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 120),
@@ -102,9 +89,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 16),
               _buildBentoGrid(todayCheckinAsync, partnerCheckinAsync, partner, streakAsync),
               const SizedBox(height: 16),
-              _buildDailyPromptCard(todayCheckinAsync, currentPrompt),
+              _buildDailyPromptCard(todayCheckinAsync, partnerCheckinAsync, partner, currentPrompt),
               const SizedBox(height: 16),
-              _buildInteractionFooter(partner, isPingCooldown, ref),
+              _buildInteractionFooter(partner, user?.coupleId, isPingCooldown, ref),
               const SizedBox(height: 16),
               _buildUpcomingMilestone(countdownAsync),
             ],
@@ -114,7 +101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  PreferredSizeWidget _buildHeader(user) {
+  PreferredSizeWidget _buildHeader(UserModel? user) {
     final avatarUrl = user?.avatarUrl;
 
     return AppBar(
@@ -158,7 +145,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPartnerStatusCard(partner, AsyncValue<CheckinModel?> partnerCheckinAsync, bool isPartnerOnline) {
+  Widget _buildPartnerStatusCard(UserModel? partner,
+      AsyncValue<CheckinModel?> partnerCheckinAsync, bool isPartnerOnline) {
     final partnerName = partner?.displayName ?? 'Partner';
     final partnerAvatar = partner?.avatarUrl;
     
@@ -223,14 +211,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildInteractionFooter(partner, bool isPingCooldown, WidgetRef ref) {
+  Widget _buildInteractionFooter(
+      UserModel? partner, String? coupleId, bool isPingCooldown, WidgetRef ref) {
+    final canPing = !isPingCooldown && partner != null && coupleId != null;
     return Row(
       children: [
         Expanded(
           child: FilledButton.icon(
-            onPressed: isPingCooldown || partner == null ? null : () {
-              ref.read(pingControllerProvider.notifier).sendPing(partner.id, partner.coupleId!);
-            },
+            onPressed: !canPing
+                ? null
+                : () {
+                    ref
+                        .read(pingControllerProvider.notifier)
+                        .sendPing(partner.id, coupleId);
+                  },
             icon: isPingCooldown 
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.favorite_rounded),
@@ -247,7 +241,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildBentoGrid(AsyncValue<CheckinModel?> myCheckinAsync, AsyncValue<CheckinModel?> partnerCheckinAsync, partner, AsyncValue<Map<String, int>> streakAsync) {
+  Widget _buildBentoGrid(
+      AsyncValue<CheckinModel?> myCheckinAsync,
+      AsyncValue<CheckinModel?> partnerCheckinAsync,
+      UserModel? partner,
+      AsyncValue<Map<String, int>> streakAsync) {
     final streakData = streakAsync.valueOrNull ?? {'current': 0, 'longest': 0};
     
     return Row(
@@ -295,19 +293,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  IconData _getIconData(String id) {
-    switch (id) {
-      case 'sentiment_very_satisfied': return Icons.sentiment_very_satisfied_rounded;
-      case 'self_improvement': return Icons.self_improvement_rounded;
-      case 'favorite': return Icons.favorite_rounded;
-      case 'bedtime': return Icons.bedtime_rounded;
-      case 'distance': return Icons.social_distance_rounded;
-      case 'cloud': return Icons.cloud_rounded;
-      default: return Icons.sentiment_satisfied_rounded;
-    }
-  }
-
-  Widget _buildPartnerMood(CheckinModel checkin, partner) {
+  Widget _buildPartnerMood(CheckinModel checkin, UserModel? partner) {
     return GestureDetector(
       onTap: () {
         showModalBottomSheet(
@@ -330,7 +316,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: AppColors.tertiaryContainer.withValues(alpha: 0.2),
               ),
               child: Center(
-                child: Icon(_getIconData(checkin.moodEmoji), color: AppColors.tertiary, size: 32),
+                child: Icon(moodIconFor(checkin.moodEmoji), color: AppColors.tertiary, size: 32),
               ),
             ),
             const SizedBox(height: 12),
@@ -342,7 +328,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPartnerCheckinModal(CheckinModel checkin, partner) {
+  Widget _buildPartnerCheckinModal(CheckinModel checkin, UserModel? partner) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -376,7 +362,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     color: AppColors.tertiaryContainer.withValues(alpha: 0.2),
                   ),
                   child: Center(
-                    child: Icon(_getIconData(checkin.moodEmoji), color: AppColors.tertiary, size: 32),
+                    child: Icon(moodIconFor(checkin.moodEmoji), color: AppColors.tertiary, size: 32),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -458,8 +444,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildDailyPromptCard(AsyncValue<CheckinModel?> myCheckinAsync, String currentPrompt) {
+  Widget _buildDailyPromptCard(
+    AsyncValue<CheckinModel?> myCheckinAsync,
+    AsyncValue<CheckinModel?> partnerCheckinAsync,
+    UserModel? partner,
+    String currentPrompt,
+  ) {
     final bool hasCheckedIn = myCheckinAsync.valueOrNull != null;
+    final partnerName = partner?.displayName ?? 'Your partner';
+    final partnerAnswered = partnerCheckinAsync.valueOrNull != null;
+    final partnerStatus = partnerAnswered
+        ? '$partnerName has answered'
+        : '$partnerName hasn\'t answered yet';
     
     return GestureDetector(
       onTap: () => context.push('/checkin'),
@@ -472,11 +468,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Opacity(
-                    opacity: 0.6,
-                    child: Image.network(
-                      'https://lh3.googleusercontent.com/aida-public/AB6AXuBJhU7jPgItH1KZ4pQfbyFw1s1vXYky9lNIvgXlDyQ4e7z8YuCQBnnvYxcKxQCXkcSfvLl_N-0P-Lll91XnbGReUhnP1ISGZX7GXqYyA52hE1UwXj5NAN3U0F-Dk0MVWxoK81zi-OanuaJV_oGg7N0cBzPTZjurnnhzA0RJQQy0nqKjbrTn820BOVS7St_-XJlp00GgFFR95uzzWNt9rkdgjEsb3ENomrdd2XFS_oMm77ibGxrI8zCNC7KEjMHwPvybsKN2D5OisiBr',
-                      fit: BoxFit.cover,
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primary.withValues(alpha: 0.35),
+                          AppColors.secondary.withValues(alpha: 0.25),
+                          AppColors.surface,
+                        ],
+                      ),
                     ),
                   ),
                   Container(
@@ -526,8 +528,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Waiting for Sarah to answer', style: AppTypography.bodySm),
-                        const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+                        Expanded(
+                          child: Text(partnerStatus,
+                              style: AppTypography.bodySm,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                        Icon(Icons.check_circle_rounded,
+                            color: partnerAnswered
+                                ? AppColors.primary
+                                : AppColors.outline),
                       ],
                     ),
                   ],
@@ -549,7 +558,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Sarah hasn\'t answered yet', style: AppTypography.bodySm),
+                        Expanded(
+                          child: Text(partnerStatus,
+                              style: AppTypography.bodySm,
+                              overflow: TextOverflow.ellipsis),
+                        ),
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -573,7 +586,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final event = countdownAsync.valueOrNull;
     if (event == null) return const SizedBox.shrink(); // Hide if no event
     
-    final diff = event.date.difference(DateTime.now());
+    final diff = event.targetDate.difference(DateTime.now());
     final days = diff.inDays;
     final hours = diff.inHours % 24;
 

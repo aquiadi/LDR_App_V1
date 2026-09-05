@@ -1,17 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
+import '../../../models/checkin_model.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/mood_catalog.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../auth/providers/current_user_provider.dart';
+import '../../auth/providers/partner_provider.dart';
 import '../providers/history_provider.dart';
+
+/// One calendar day of the couple's shared history.
+class _TimelineDay {
+  final DateTime day;
+  final CheckinModel? mine;
+  final CheckinModel? theirs;
+
+  _TimelineDay({required this.day, this.mine, this.theirs});
+
+  bool get isComplete => mine != null && theirs != null;
+  bool get isEmpty => mine == null && theirs == null;
+}
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
+  /// Milestone ladder the streak ring fills towards.
+  static int _nextMilestone(int streak) {
+    for (final m in const [7, 14, 30, 60, 100, 180, 365]) {
+      if (streak < m) return m;
+    }
+    // Past the last named milestone, keep stepping in years.
+    return ((streak ~/ 365) + 1) * 365;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final streakAsync = ref.watch(syncStreakProvider);
+    final historyAsync = ref.watch(historyCheckinsProvider);
+    final myId = ref.watch(currentUserProvider).valueOrNull?.id;
+    final partnerName =
+        ref.watch(partnerStreamProvider).valueOrNull?.displayName ?? 'Partner';
 
     return AmbientBackground(
       child: Scaffold(
@@ -21,29 +51,44 @@ class HistoryScreen extends ConsumerWidget {
           elevation: 0,
           titleSpacing: 24,
           title: Text('Our Journey', style: AppTypography.headlineLgMobile),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: IconButton(
-                icon: const Icon(Icons.filter_list_rounded, color: AppColors.onSurfaceVariant),
-                onPressed: () {},
-              ),
-            ),
-          ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 120),
-          children: [
-            _buildStreakHero(streakAsync),
-            const SizedBox(height: 32),
-            _buildTimelineSection(),
-          ],
+        body: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(historyCheckinsProvider);
+            await ref.read(historyCheckinsProvider.future);
+          },
+          child: ListView(
+            padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 120),
+            children: [
+              _buildStreakHero(streakAsync),
+              const SizedBox(height: 32),
+              Text(
+                'TIMELINE',
+                style: AppTypography.labelMd
+                    .copyWith(color: AppColors.outline, letterSpacing: 1.5),
+              ),
+              const SizedBox(height: 24),
+              historyAsync.when(
+                data: (checkins) => _buildTimeline(checkins, myId, partnerName),
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                ),
+                error: (e, _) => _buildMessage("Couldn't load your history.\n$e"),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildStreakHero(AsyncValue<Map<String, int>> streakAsync) {
+    final streak = streakAsync.valueOrNull?['current'] ?? 0;
+    final longest = streakAsync.valueOrNull?['longest'] ?? 0;
+    final target = _nextMilestone(streak);
+    final remaining = target - streak;
+
     return GlassCard(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -55,7 +100,7 @@ class HistoryScreen extends ConsumerWidget {
                 width: 140,
                 height: 140,
                 child: CircularProgressIndicator(
-                  value: 14 / 30, // Example progress to next milestone
+                  value: target == 0 ? 0 : (streak / target).clamp(0.0, 1.0),
                   strokeWidth: 8,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -65,23 +110,36 @@ class HistoryScreen extends ConsumerWidget {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.local_fire_department_rounded, color: AppColors.primaryContainer, size: 32),
+                  const Icon(Icons.local_fire_department_rounded,
+                      color: AppColors.primaryContainer, size: 32),
                   const SizedBox(height: 4),
                   streakAsync.when(
-                    data: (streak) => Text(streak['current'].toString(), style: AppTypography.display.copyWith(color: AppColors.primaryContainer, height: 1.1)),
-                    loading: () => const SizedBox(height: 40, width: 40, child: CircularProgressIndicator()),
-                    error: (_, __) => const Text('?'),
+                    data: (s) => Text(
+                      '${s['current']}',
+                      style: AppTypography.display
+                          .copyWith(color: AppColors.primaryContainer, height: 1.1),
+                    ),
+                    loading: () => const SizedBox(
+                        height: 40, width: 40, child: CircularProgressIndicator()),
+                    error: (_, __) => const Text('—'),
                   ),
-                  Text('DAYS', style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
+                  Text('DAYS',
+                      style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 24),
-          Text('You\'re on a roll!', style: AppTypography.headlineMd),
+          Text(
+            streak == 0 ? 'Start your streak today' : "You're on a roll!",
+            style: AppTypography.headlineMd,
+          ),
           const SizedBox(height: 8),
           Text(
-            'Just 16 more days to reach your 1-month milestone. Keep checking in.',
+            streak == 0
+                ? 'Check in today to begin your first streak.'
+                : '$remaining more ${remaining == 1 ? 'day' : 'days'} to your '
+                    '$target-day milestone.${longest > streak ? ' Best so far: $longest.' : ''}',
             style: AppTypography.bodySm.copyWith(color: AppColors.outline),
             textAlign: TextAlign.center,
           ),
@@ -90,126 +148,110 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimelineSection() {
+  /// Collapses the flat check-in list into one entry per calendar day,
+  /// splitting each day's rows into the viewer's and their partner's.
+  List<_TimelineDay> _groupByDay(List<CheckinModel> checkins, String? myId) {
+    final byDay = <DateTime, List<CheckinModel>>{};
+    for (final c in checkins) {
+      final local = c.createdAt.toLocal();
+      final key = DateTime(local.year, local.month, local.day);
+      byDay.putIfAbsent(key, () => []).add(c);
+    }
+
+    final days = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
+    return days.map((day) {
+      final rows = byDay[day]!;
+      return _TimelineDay(
+        day: day,
+        mine: _firstOrNull(rows.where((c) => c.userId == myId)),
+        theirs: _firstOrNull(rows.where((c) => c.userId != myId)),
+      );
+    }).toList();
+  }
+
+  static CheckinModel? _firstOrNull(Iterable<CheckinModel> items) =>
+      items.isEmpty ? null : items.first;
+
+  Widget _buildTimeline(List<CheckinModel> checkins, String? myId, String partnerName) {
+    if (checkins.isEmpty) {
+      return _buildMessage(
+        'No check-ins yet.\nYour shared timeline starts with your first one.',
+      );
+    }
+
+    final days = _groupByDay(checkins, myId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('TIMELINE', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
-        const SizedBox(height: 24),
-        
-        _buildTimelineItem(
-          isFirst: true,
-          isActive: true,
-          title: 'Today',
-          subtitle: 'You and Sarah checked in',
-          icon: Icons.check_circle_rounded,
-          iconColor: AppColors.primary,
-          child: GlassCard(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.sentiment_very_satisfied_rounded, color: AppColors.primary, size: 20),
-                          const SizedBox(width: 8),
-                          Text('You: Joyful', style: AppTypography.bodyMd),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(Icons.self_improvement_rounded, color: AppColors.tertiary, size: 20),
-                          const SizedBox(width: 8),
-                          Text('Sarah: Calm', style: AppTypography.bodyMd),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text('92% Sync', style: AppTypography.labelMd.copyWith(color: AppColors.primaryContainer)),
-                ),
-              ],
-            ),
+        for (var i = 0; i < days.length; i++)
+          _buildTimelineItem(
+            entry: days[i],
+            partnerName: partnerName,
+            isFirst: i == 0,
+            isLast: i == days.length - 1,
           ),
-        ),
-        
-        _buildTimelineItem(
-          isActive: false,
-          title: 'Yesterday',
-          subtitle: 'You missed your check-in',
-          icon: Icons.radio_button_unchecked_rounded,
-          iconColor: AppColors.outline,
-        ),
-        
-        _buildTimelineItem(
-          isActive: true,
-          title: 'Oct 12, 2023',
-          subtitle: 'Paris Reunion',
-          icon: Icons.flight_land_rounded,
-          iconColor: AppColors.secondary,
-          isMilestone: true,
-        ),
-        
-        _buildTimelineItem(
-          isLast: true,
-          isActive: false,
-          title: 'Oct 10, 2023',
-          subtitle: 'You and Sarah checked in',
-          icon: Icons.radio_button_unchecked_rounded,
-          iconColor: AppColors.outline,
-        ),
       ],
     );
   }
 
+  String _labelForDay(DateTime day) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    if (diff < 7) return DateFormat('EEEE').format(day);
+    return DateFormat('MMM d, y').format(day);
+  }
+
   Widget _buildTimelineItem({
-    bool isFirst = false,
-    bool isLast = false,
-    required bool isActive,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color iconColor,
-    bool isMilestone = false,
-    Widget? child,
+    required _TimelineDay entry,
+    required String partnerName,
+    required bool isFirst,
+    required bool isLast,
   }) {
+    final iconColor = entry.isComplete
+        ? AppColors.primary
+        : (entry.isEmpty ? AppColors.outline : AppColors.tertiary);
+
+    final subtitle = entry.isComplete
+        ? 'You and $partnerName both checked in'
+        : entry.mine != null
+            ? 'You checked in'
+            : entry.theirs != null
+                ? '$partnerName checked in'
+                : 'No check-ins';
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Line and Dot
           SizedBox(
             width: 32,
             child: Column(
               children: [
-                if (!isFirst) 
-                  Container(width: 2, height: 16, color: AppColors.outline.withValues(alpha: 0.3)),
+                if (!isFirst)
+                  Container(
+                      width: 2,
+                      height: 16,
+                      color: AppColors.outline.withValues(alpha: 0.3)),
                 Container(
-                  width: isMilestone ? 32 : 16,
-                  height: isMilestone ? 32 : 16,
+                  width: 16,
+                  height: 16,
                   margin: EdgeInsets.only(top: isFirst ? 4 : 0),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isMilestone ? iconColor.withValues(alpha: 0.2) : (isActive ? iconColor : Colors.transparent),
+                    color: entry.isEmpty ? Colors.transparent : iconColor,
                     border: Border.all(color: iconColor, width: 2),
                   ),
-                  child: isMilestone ? Icon(icon, size: 16, color: iconColor) : null,
                 ),
                 if (!isLast)
                   Expanded(
                     child: Container(
-                      width: 2, 
-                      color: isActive ? AppColors.primary.withValues(alpha: 0.5) : AppColors.outline.withValues(alpha: 0.3),
+                      width: 2,
+                      color: entry.isComplete
+                          ? AppColors.primary.withValues(alpha: 0.5)
+                          : AppColors.outline.withValues(alpha: 0.3),
                       margin: const EdgeInsets.symmetric(vertical: 4),
                     ),
                   ),
@@ -217,25 +259,95 @@ class HistoryScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 16),
-          // Content
           Expanded(
             child: Padding(
               padding: EdgeInsets.only(bottom: isLast ? 0 : 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTypography.headlineMd.copyWith(fontSize: 18, color: isMilestone ? iconColor : null)),
+                  Text(_labelForDay(entry.day),
+                      style: AppTypography.headlineMd.copyWith(fontSize: 18)),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
-                  if (child != null) ...[
+                  Text(subtitle,
+                      style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
+                  if (!entry.isEmpty) ...[
                     const SizedBox(height: 16),
-                    child,
-                  ]
+                    _buildDayCard(entry, partnerName),
+                  ],
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDayCard(_TimelineDay entry, String partnerName) {
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (entry.mine != null)
+                  _moodRow('You', entry.mine!, AppColors.primary),
+                if (entry.mine != null && entry.theirs != null)
+                  const SizedBox(height: 12),
+                if (entry.theirs != null)
+                  _moodRow(partnerName, entry.theirs!, AppColors.tertiary),
+              ],
+            ),
+          ),
+          if (entry.isComplete)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                '${_syncScore(entry.mine!, entry.theirs!)}% Sync',
+                style: AppTypography.labelMd
+                    .copyWith(color: AppColors.primaryContainer),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// How closely the pair's energy landed on the same day, as a percentage.
+  /// A 9-point gap is the widest possible on a 1–10 scale.
+  static int _syncScore(CheckinModel a, CheckinModel b) {
+    final gap = (a.energyScore - b.energyScore).abs();
+    return (100 - (gap / 9 * 100)).round().clamp(0, 100);
+  }
+
+  Widget _moodRow(String who, CheckinModel checkin, Color color) {
+    return Row(
+      children: [
+        Icon(moodIconFor(checkin.moodEmoji), color: color, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('$who: ${checkin.moodLabel}',
+              style: AppTypography.bodyMd, overflow: TextOverflow.ellipsis),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMessage(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: AppTypography.bodyMd.copyWith(color: AppColors.outline),
+        ),
       ),
     );
   }

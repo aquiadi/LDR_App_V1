@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/supabase_client.dart';
@@ -56,7 +57,7 @@ class PresenceController extends _$PresenceController {
         'last_seen': DateTime.now().toIso8601String(),
       }).eq('id', userId);
     } catch (e) {
-      print('Error updating last_seen: $e');
+      debugPrint('Error updating last_seen: $e');
     }
   }
 }
