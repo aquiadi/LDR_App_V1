@@ -7,6 +7,13 @@ than an occasional long call.
 
 Flutter client, Supabase backend (Postgres + Auth + Realtime + Edge Functions).
 
+**Live demo:** https://ldr-app-v1-n9fe.vercel.app
+
+It is a web build of a phone app, so view it in a narrow window or with your
+browser's device toolbar on. See [Reviewing the app](#reviewing-the-app) for how
+to get past the login screen and how to see the two-partner behaviour, which is
+the whole point of the product and needs two accounts.
+
 ---
 
 ## What it does
@@ -96,6 +103,107 @@ RLS membership checks go through a `SECURITY DEFINER` helper
 pairing by selecting from `users` recurses, and Postgres aborts the query with
 `infinite recursion detected in policy` — worth knowing before writing a
 policy that looks obviously correct.
+
+---
+
+## Reviewing the app
+
+Three ways in, cheapest first. All of them hit the same wall eventually: this is
+a two-person product, so a single reviewer needs **two accounts** to see
+anything interesting. That part is covered at the bottom.
+
+### 1. The hosted build (no setup)
+
+https://ldr-app-v1-n9fe.vercel.app
+
+Sign up with any email and password. It is a phone-shaped layout, so narrow the
+window or switch on your browser's device toolbar.
+
+If sign-up appears to succeed but login then fails, the Supabase project still
+has **Confirm email** switched on and the account is waiting on a link.
+
+### 2. Locally, against the same backend (~5 minutes)
+
+The fastest way to run the code itself. Needs Flutter 3.44+ and nothing else:
+reuse the deployed project's credentials, since the anon key is already public
+in the deployed bundle.
+
+```bash
+git clone https://github.com/aquiadi/LDR_App_V1.git && cd LDR_App_V1
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+
+flutter run -d chrome \
+  --dart-define=SUPABASE_URL=https://<project>.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=<anon-key>
+```
+
+Only `chrome` and `macos` are available as targets; there are no Android or iOS
+directories yet (see [Known gaps](#known-gaps)).
+
+Launch without the two `--dart-define`s and the app boots to a screen naming
+exactly what is missing rather than crashing — that is the expected behaviour,
+not a failure.
+
+**Reviewers share one database this way.** Sign-ups and check-ins are visible to
+whoever else is testing. For an isolated run, use option 3.
+
+### 3. Locally, against a local Supabase (fully isolated)
+
+Needs Docker and the Supabase CLI. Nothing leaves the machine.
+
+```bash
+supabase start          # boots Postgres, Auth, Realtime; prints URL + anon key
+supabase db reset       # applies supabase/migrations
+```
+
+`supabase start` prints an `API URL` (usually `http://127.0.0.1:54321`) and an
+`anon key`. Pass those:
+
+```bash
+flutter run -d chrome \
+  --dart-define=SUPABASE_URL=http://127.0.0.1:54321 \
+  --dart-define=SUPABASE_ANON_KEY=<anon key from supabase start>
+```
+
+A local stack does not send real email, so accounts are usable immediately;
+anything the app would have mailed is caught by Inbucket at
+http://127.0.0.1:54324. Run `supabase stop` when finished.
+
+### Seeing the two-partner behaviour
+
+The dashboard is mostly empty with one account — partner mood, presence, the
+sync score and the streak all need a paired second person. To pair yourself:
+
+1. Sign up as user A. Choose **I want to create a space** and finish onboarding.
+   Copy the 8-character invite code.
+2. Open a **second browser profile or an incognito window** — not just a new
+   tab, since the session is shared per profile. Sign up as user B.
+3. As user B, enter A's invite code.
+4. Check in as both. Put the two windows side by side: the partner's mood card
+   updates over the realtime subscription without a refresh.
+
+Streaks and the sync score need check-ins on consecutive days, so they read 0
+and empty on a fresh account. The logic is covered by `test/streak_test.dart` if
+you would rather read it than wait a day.
+
+### Reading the code first
+
+If you are reviewing rather than clicking:
+
+- `supabase/migrations/20240622000000_init_schema.sql` — the whole data model
+  and every RLS policy.
+- `supabase/tests/schema_smoke_test.sql` — the product flow driven through
+  Postgres with RLS enforced, including the negative cases.
+- `lib/core/navigation/app_router.dart` — the redirect is the app's real state
+  machine.
+- `lib/features/history/providers/history_provider.dart` — `calculateStreak` is
+  the one piece of non-trivial pure logic.
+
+```bash
+flutter analyze     # clean
+flutter test        # 21 tests
+```
 
 ---
 
