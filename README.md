@@ -112,6 +112,25 @@ dart run build_runner build --delete-conflicting-outputs
 Apply the schema — either `supabase db push`, or paste
 `supabase/migrations/20240622000000_init_schema.sql` into the SQL editor.
 
+On a **brand-new project** that is all you need. On a project where an earlier
+version of the schema was already applied, check what is there first:
+
+```sql
+select table_name, string_agg(column_name, ', ' order by ordinal_position)
+  from information_schema.columns
+ where table_schema = 'public'
+ group by table_name order by table_name;
+```
+
+If `couples` comes back with `partner_a_id`/`partner_b_id`, or `users` is
+missing `couple_id`, the project is on the old shape. The init migration uses
+`CREATE TABLE IF NOT EXISTS`, so it will not reshape those tables — it skips
+them, then fails on the first policy referencing a column they do not have,
+leaving the database half-migrated. Run
+`supabase/migrations/00000000000000_reset_public_schema.sql` first; it drops the
+app objects (destructive — check-ins and couples are lost, auth accounts
+survive) so the init migration can build them correctly.
+
 Credentials are compile-time `--dart-define`s, not a bundled `.env`, so nothing
 secret lands in the repo:
 
@@ -143,7 +162,7 @@ Set two environment variables under **Settings -> Environment Variables**:
 | Name | Value |
 | --- | --- |
 | `SUPABASE_URL` | `https://<project>.supabase.co` |
-| `SUPABASE_ANON_KEY` | the project's **anon/public** key |
+| `SUPABASE_ANON_KEY` | the project's **anon** key, or its newer **publishable** (`sb_publishable_...`) key |
 
 These are read by the build script and forwarded to the compiler as
 `--dart-define`. That indirection matters: `String.fromEnvironment` is resolved
@@ -151,10 +170,15 @@ at compile time, so Vercel's variables do nothing on their own -- Flutter never
 looks at the runtime environment. If the build runs without them the deploy
 still succeeds and the app shows its "Sync Setting Required" screen.
 
-The anon key is baked into the JavaScript bundle and is readable by anyone who
-loads the page. That is what the anon key is for; row-level security is what
-protects the data. Never put the `service_role` key here -- it bypasses RLS
-entirely.
+Either key works. The client never parses this value -- it is sent verbatim as
+the `apikey` header, and as `Authorization: Bearer` only until a user signs in,
+after which their session JWT takes over. Nothing in the stack decodes it, so
+the non-JWT `sb_publishable_...` format is a drop-in replacement.
+
+Whichever you use, it is baked into the JavaScript bundle and readable by anyone
+who loads the page. That is what these keys are for; row-level security is what
+protects the data. Never use the `service_role` or `sb_secret_...` key here --
+they bypass RLS entirely.
 
 Two things to set on the Supabase side once the domain exists:
 
