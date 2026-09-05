@@ -133,6 +133,41 @@ supabase functions deploy generate_insights
 supabase secrets set OPENAI_API_KEY=<key>
 ```
 
+### Deploying a preview (Vercel)
+
+`vercel.json` and `scripts/vercel_build.sh` are checked in. Import the repo at
+vercel.com and the defaults apply; there is no framework preset to choose.
+
+Set two environment variables under **Settings -> Environment Variables**:
+
+| Name | Value |
+| --- | --- |
+| `SUPABASE_URL` | `https://<project>.supabase.co` |
+| `SUPABASE_ANON_KEY` | the project's **anon/public** key |
+
+These are read by the build script and forwarded to the compiler as
+`--dart-define`. That indirection matters: `String.fromEnvironment` is resolved
+at compile time, so Vercel's variables do nothing on their own -- Flutter never
+looks at the runtime environment. If the build runs without them the deploy
+still succeeds and the app shows its "Sync Setting Required" screen.
+
+The anon key is baked into the JavaScript bundle and is readable by anyone who
+loads the page. That is what the anon key is for; row-level security is what
+protects the data. Never put the `service_role` key here -- it bypasses RLS
+entirely.
+
+Two things to set on the Supabase side once the domain exists:
+
+- **Authentication -> URL Configuration**: set Site URL to the deployed origin,
+  so confirmation links point somewhere real.
+- **Authentication -> Providers -> Email**: for a throwaway preview, turn off
+  "Confirm email" so sign-ups can log in immediately.
+
+The first build fetches the Flutter SDK (a few minutes); later builds reuse
+`.vercel/cache`. The deploy is ~43 MB because CanvasKit is bundled rather than
+pulled from a CDN; dropping `--no-web-resources-cdn` from the build script
+takes it to roughly 6 MB in exchange for a third-party runtime fetch.
+
 ### Verifying
 
 ```bash
