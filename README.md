@@ -33,6 +33,42 @@ the whole point of the product and needs two accounts.
 Feature-first, with a deliberately thin layer cake. Each feature owns its
 screens and its providers; anything shared lives in `core/` or `shared/`.
 
+```mermaid
+flowchart TB
+    screens["<b>screens/</b><br>widgets, minimal logic"]
+    router["<b>core/navigation</b><br>GoRouter — one redirect<br>gates login and pairing"]
+    providers["<b>providers/</b><br>Riverpod 2, @riverpod codegen<br>futures, streams, channels"]
+    services["<b>services/</b><br>auth · couple · checkin<br>the only layer that knows<br>the table shapes"]
+    net["<b>core/network</b><br>supabaseClientProvider<br>URL + anon key compiled in<br>via --dart-define"]
+
+    subgraph backend["Supabase project"]
+        direction LR
+        authsvc["<b>Auth</b><br>auth.users, JWT session"]
+        db[("<b>Postgres</b> — 9 tables<br>RLS on every one<br>triggers + join_couple RPC")]
+        realtime["<b>Realtime</b><br>Postgres change streams<br>+ Presence"]
+        fn["<b>Edge Functions</b> — Deno<br>generate_insights<br>optional LLM call"]
+    end
+
+    screens -->|"context.go"| router
+    router -->|"ref.read"| providers
+    screens -->|"ref.watch"| providers
+    providers -->|"writes, pairing"| services
+    providers -->|"reads, streams"| net
+    services --> net
+    net -->|"auth"| authsvc
+    net -->|"PostgREST, under RLS"| db
+    net -->|"websocket"| realtime
+    net -->|"functions.invoke"| fn
+    authsvc -.->|"on_auth_user_created"| db
+    db -.->|"WAL"| realtime
+    fn -->|"caller JWT, RLS still applies"| db
+    realtime -.->|"pushes changed rows"| providers
+```
+
+Every arrow into Postgres carries the signed-in user's JWT, including the
+ones from the Edge Function: the policies decide what comes back, not the
+client. The anon key is compiled in and public by design.
+
 ```
 main.dart              Supabase init from --dart-define, ProviderScope
 core/
@@ -55,6 +91,47 @@ supabase/
 rather than fan out from a store: `currentUser` → `currentCouple` → `partner` →
 `partnerCheckin`, each one invalidating downstream automatically.
 
+```mermaid
+flowchart LR
+    authctl["authController<br>signIn · signUp · signOut"]
+    invite["inviteController<br>create or join a space"]
+    user["<b>currentUser</b><br>public.users row"]
+    couple(["<b>currentCoupleStream</b><br>the couple row"])
+    partner(["<b>partnerStream</b><br>partner profile"])
+    pcheck(["<b>partnerCheckinStream</b><br>their check-in today"])
+    presence(["<b>partnerPresenceStream</b><br>Presence channel"])
+    ping(["<b>incomingPingStream</b><br>insert events"])
+    session(["<b>authStateChanges</b><br>auth events"])
+    today["todayCheckin"]
+    history["historyCheckins<br>last 180 rows"]
+    streak["syncStreak<br>pure calculateStreak"]
+    countdown["nextCountdown"]
+    insights["weeklyInsights<br>Edge Function call"]
+    router{{"appRouter redirect<br>login → invite → dashboard"}}
+
+    authctl -.->|"invalidate"| user
+    invite -.->|"invalidate"| user
+    user --> couple
+    couple --> partner
+    couple --> pcheck
+    user --> today
+    user --> history
+    history --> streak
+    user --> presence
+    user --> ping
+    user --> countdown
+    user --> insights
+    session -.->|"notify"| router
+    user -.->|"notify"| router
+    couple -.->|"notify"| router
+```
+
+Rounded nodes are live subscriptions — a Postgres change stream or a Presence
+channel — and square ones are futures that refetch when something upstream is
+invalidated. Dotted edges carry invalidation and router notifications rather
+than data. `currentUser` is the hinge: a sign-in, a sign-out or a pairing
+invalidates it and the whole right-hand side refreshes behind it.
+
 **Routing** is a single `GoRouter` whose `redirect` is the app's real state
 machine — unauthenticated to `/login`, authenticated but unpaired to `/invite`,
 paired to `/dashboard`. Screens never make routing decisions themselves. The
@@ -67,6 +144,25 @@ with a `last_seen` column as the coarse fallback when the socket is not live.
 Tables that back a `.stream()` must be in the `supabase_realtime` publication
 and set to `REPLICA IDENTITY FULL`; the migration does both, and a table missing
 from that publication produces a stream that silently never emits.
+
+One check-in, end to end — the round trip the product is built on:
+
+```mermaid
+sequenceDiagram
+    participant A as Partner A
+    participant S as CheckinService
+    participant PG as Postgres + RLS
+    participant RT as Realtime
+    participant B as Partner B
+
+    A->>S: mood, energy, optional note
+    S->>PG: insert, or update today's row
+    PG-->>PG: trg_update_streak advances the couple streak on a new row
+    PG-->>RT: row change on the couple's rows
+    RT-->>B: partnerCheckinStream emits
+    B-->>B: mood card rebuilds, no refresh
+    Note over A,B: one row per person per UTC day, editable until the day rolls over
+```
 
 ---
 
