@@ -8,12 +8,14 @@ people closer than the occasional long call.
 It's a Flutter app on a Supabase backend (Postgres, Auth, Realtime and Edge
 Functions).
 
-**Live demo:** https://ldr-app-v1-n9fe.vercel.app
+**Live:** https://ldr-app-v1-n9fe.vercel.app (the landing page) and
+https://ldr-app-v1-n9fe.vercel.app/app/ (the app itself).
 
-It's a web build of a phone app, so open it in a narrow window or turn on your
-browser's device toolbar. [Reviewing the app](#reviewing-the-app) explains how
-to get past the login screen and how to see the two-partner behaviour, which is
-the whole point of the app and needs two accounts.
+The app works on phones, tablets and desktops: one column with a bottom bar on a
+phone, two columns on an iPad, and a sidebar layout on a laptop.
+[Reviewing the app](#reviewing-the-app) explains how to get past the login
+screen and how to see the two-partner behaviour, which is the whole point of
+the app and needs two accounts.
 
 ---
 
@@ -79,10 +81,11 @@ core/
   theme/               Colours, typography (fonts bundled, see below)
 models/                Freezed + json_serializable domain models
 services/              Supabase reads/writes; the only layer that knows SQL-ish detail
-shared/                Mood catalog, reusable widgets
+shared/                Mood catalog, reusable widgets, responsive shell
 features/<name>/
   providers/           Riverpod (codegen); async + realtime state
   screens/             Widgets, minimal logic
+web_landing/           The static landing page served at / (HTML, CSS, a little JS)
 supabase/
   migrations/          One consolidated schema migration
   functions/           Edge Functions (Deno)
@@ -231,10 +234,10 @@ see anything interesting. That part is covered at the end of this section.
 
 ### 1. The hosted build (no setup)
 
-https://ldr-app-v1-n9fe.vercel.app
+https://ldr-app-v1-n9fe.vercel.app/app/
 
-Sign up with any email and password. The layout is phone-shaped, so narrow the
-window or switch on your browser's device toolbar.
+Sign up with any email and password. Any window size works; try resizing it to
+see the phone, tablet and desktop layouts.
 
 If sign-up seems to work but login then fails, the Supabase project still has
 **Confirm email** turned on and the account is waiting on a confirmation link.
@@ -326,7 +329,7 @@ If you're reviewing rather than clicking, these are the files I'd start with:
 
 ```bash
 flutter analyze     # clean
-flutter test        # 26 tests
+flutter test        # 28 tests
 ```
 
 ---
@@ -388,6 +391,12 @@ deterministic text.
 `vercel.json` and `scripts/vercel_build.sh` are checked in. Import the repo at
 vercel.com and the defaults apply. There's no framework preset to choose.
 
+The build produces one site in `build/site`: the landing page from
+`web_landing/` at `/`, and the Flutter app, built with `--base-href /app/`,
+under `/app/`. I kept the landing page as plain HTML on purpose. It loads
+instantly and search engines can read it, while the 40-odd MB of CanvasKit
+only downloads once someone actually opens the app.
+
 Set two environment variables under **Settings → Environment Variables**:
 
 | Name | Value |
@@ -413,8 +422,9 @@ here. They bypass RLS entirely.
 
 Two settings to change on the Supabase side once the domain exists:
 
-- **Authentication → URL Configuration**: set Site URL to the deployed origin,
-  so confirmation links point somewhere real.
+- **Authentication → URL Configuration**: set Site URL to the app's address,
+  `https://<domain>/app/`, so confirmation links open the app rather than the
+  landing page.
 - **Authentication → Providers → Email**: for a throwaway preview, turn off
   "Confirm email" so new accounts can log in immediately.
 
@@ -426,16 +436,16 @@ CanvasKit is bundled instead of pulled from a CDN. Dropping
 at the cost of a third-party fetch at runtime.
 
 Flutter's web output isn't content-hashed: `assets/` and `canvaskit/` keep the
-same file names from one build to the next. So I serve them with
-`no-cache, must-revalidate` rather than as immutable. Otherwise a returning
-visitor could pair a new `main.dart.js` with last week's icon font and see
-blank squares where new icons should be.
+same file names from one build to the next. So I serve everything under
+`/app/` with `no-cache, must-revalidate` rather than as immutable. Otherwise a
+returning visitor could pair a new `main.dart.js` with last week's icon font
+and see blank squares where new icons should be.
 
 ### Verifying
 
 ```bash
 flutter analyze          # clean
-flutter test             # 26 tests
+flutter test             # 28 tests
 flutter build web --release --no-web-resources-cdn --dart-define=...
 ```
 
@@ -447,9 +457,18 @@ Postgres with RLS on, including the negative cases. See
 
 ## Notes on some decisions
 
+**The look.** I wanted it to feel like paper and ink, not like another dark
+dashboard with glowing gradients. Warm off-white backgrounds, one ember accent
+for you and a dusk blue for your partner, Instrument Serif for headings and
+Inter for everything else. The only gradients are skies: your partner's card
+is coloured by the time of day where they are, worked out from the UTC offset
+the app saves with their heartbeat, so "it's 2 am for them" needs no reading.
+The landing page uses the same tokens, and its screenshots are real
+screenshots of the app.
+
 **Fonts are bundled, not fetched.** By default `google_fonts` downloads font
 files at runtime. On a cold start without network, that means the UI paints
-with no text at all: not a fallback font, nothing. Sora and Inter ship in
+with no text at all: not a fallback font, nothing. Instrument Serif and Inter ship in
 `assets/google_fonts/`, and I turn runtime fetching off in `main()`. It costs
 about 1.5 MB and buys a predictable first paint and one less third-party
 request.
@@ -499,9 +518,9 @@ What I haven't done yet:
   only appears if a row is added by hand.
 - **`daily_prompt_answers` is unused.** The daily prompt rotates on the client
   by date, and answers go into the check-in's note instead.
-- **Settings toggles are in-memory.** Push and haptics reset on restart.
-  `shared_preferences` is a dependency but isn't wired up, and there's no push
-  delivery, so `users.fcm_token` is never filled in.
+- **No push notifications.** A check-in or a nudge only shows up while the app
+  is open, and `users.fcm_token` is never filled in. I took the push and haptics
+  toggles out of Settings until they actually do something.
 - **No unpair or delete-account flow**, even though the schema supports it.
 - **History is capped** at the most recent 180 check-ins, with no pagination.
 - **Widget and integration tests are thin.** The tests cover the pure logic and
