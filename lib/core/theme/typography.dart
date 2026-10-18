@@ -5,42 +5,46 @@ import 'colors.dart';
 class AppTypography {
   AppTypography._();
 
-  // Primary Font Family: Sora
-  static TextStyle get _displayFamily => GoogleFonts.sora(
+  // Display: Instrument Serif. It only comes in one weight, so hierarchy
+  // comes from size, not boldness.
+  static TextStyle get _displayFamily => GoogleFonts.instrumentSerif(
         color: AppColors.onSurface,
+        fontWeight: FontWeight.w400,
       );
 
-  // Secondary Font Family: Inter
+  // Everything else: Inter
   static TextStyle get _bodyFamily => GoogleFonts.inter(
         color: AppColors.onSurface,
       );
 
-  // --- Display & Headings (Sora) ---
-  
+  // --- Display & Headings (Instrument Serif) ---
+
   static TextStyle get display => _displayFamily.copyWith(
-        fontSize: 40,
-        fontWeight: FontWeight.w600,
-        height: 48 / 40,
-        letterSpacing: -0.02 * 40,
+        fontSize: 48,
+        height: 52 / 48,
+        letterSpacing: -0.01 * 48,
       );
 
   static TextStyle get headlineLg => _displayFamily.copyWith(
-        fontSize: 32,
-        fontWeight: FontWeight.w600,
-        height: 40 / 32,
-        letterSpacing: -0.01 * 32,
+        fontSize: 36,
+        height: 42 / 36,
+        letterSpacing: -0.01 * 36,
       );
 
   static TextStyle get headlineLgMobile => _displayFamily.copyWith(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        height: 32 / 24,
+        fontSize: 32,
+        height: 38 / 32,
       );
 
   static TextStyle get headlineMd => _displayFamily.copyWith(
-        fontSize: 24,
-        fontWeight: FontWeight.w500,
-        height: 32 / 24,
+        fontSize: 28,
+        height: 34 / 28,
+      );
+
+  /// Serif italic, for the one emotional word in a heading.
+  static TextStyle get accentItalic => GoogleFonts.instrumentSerif(
+        color: AppColors.primary,
+        fontStyle: FontStyle.italic,
       );
 
   // --- Body Copy (Inter) ---
@@ -75,13 +79,21 @@ class AppTypography {
   // Legacy mappings to keep existing code compiling before it's updated
   static TextStyle get h1 => headlineLg;
   static TextStyle get h2 => headlineMd;
-  static TextStyle get h3 => headlineMd.copyWith(fontSize: 20);
+  static TextStyle get h3 => headlineMd.copyWith(fontSize: 22);
   static TextStyle get subtitle => bodyLg.copyWith(color: AppColors.onSurfaceVariant);
   static TextStyle get bodyLarge => bodyLg;
   static TextStyle get bodyMedium => bodyMd;
   static TextStyle get bodySmall => bodySm.copyWith(color: AppColors.outline);
-  static TextStyle get buttonText => headlineMd.copyWith(fontSize: 16);
+  static TextStyle get buttonText => _bodyFamily.copyWith(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        height: 24 / 16,
+      );
   static TextStyle get labelText => labelMd;
-  static TextStyle get cardTitle => headlineMd.copyWith(fontSize: 18);
+  static TextStyle get cardTitle => _bodyFamily.copyWith(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        height: 24 / 17,
+      );
   static TextStyle get statsNumber => display;
 }

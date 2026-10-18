@@ -16,7 +16,7 @@ import '../../features/insights/screens/insights_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/edit_profile_screen.dart';
 import '../../features/splash/screens/splash_screen.dart';
-import '../../shared/widgets/bottom_nav_shell.dart';
+import '../../shared/widgets/app_shell.dart';
 
 part 'app_router.g.dart';
 
@@ -111,7 +111,9 @@ GoRouter appRouter(AppRouterRef ref) {
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => LoginScreen(
+          startWithSignUp: state.uri.queryParameters['mode'] == 'signup',
+        ),
       ),
       GoRoute(
         path: AppRoutes.onboarding,
@@ -131,7 +133,7 @@ GoRouter appRouter(AppRouterRef ref) {
       ),
       ShellRoute(
         builder: (context, state, child) {
-          return BottomNavShell(child: child);
+          return AppShell(child: child);
         },
         routes: [
           GoRoute(

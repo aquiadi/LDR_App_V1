@@ -6,7 +6,8 @@ import '../../../core/theme/typography.dart';
 import '../../../models/checkin_model.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/mood_catalog.dart';
-import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/responsive.dart';
 import '../../auth/providers/current_user_provider.dart';
 import '../../auth/providers/partner_provider.dart';
 import '../providers/history_provider.dart';
@@ -44,40 +45,39 @@ class HistoryScreen extends ConsumerWidget {
         ref.watch(partnerStreamProvider).valueOrNull?.displayName ?? 'Partner';
 
     return AmbientBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          titleSpacing: 24,
-          title: Text('Our Journey', style: AppTypography.headlineLgMobile),
-        ),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(historyCheckinsProvider);
-            await ref.read(historyCheckinsProvider.future);
-          },
-          child: ListView(
-            padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 120),
-            children: [
-              _buildStreakHero(streakAsync),
-              const SizedBox(height: 32),
-              Text(
-                'TIMELINE',
-                style: AppTypography.labelMd
-                    .copyWith(color: AppColors.outline, letterSpacing: 1.5),
+      child: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(historyCheckinsProvider);
+          await ref.read(historyCheckinsProvider.future);
+        },
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(Breakpoints.isCompact(context) ? 20 : 32, 24, Breakpoints.isCompact(context) ? 20 : 32, 32),
+          children: [
+            ContentWidth(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Your journey', style: AppTypography.headlineLg),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Every day either of you checked in, newest first.',
+                    style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildStreakHero(streakAsync),
+                  const SizedBox(height: 36),
+                  historyAsync.when(
+                    data: (checkins) => _buildTimeline(checkins, myId, partnerName),
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                    ),
+                    error: (e, _) => _buildMessage("Couldn't load your history.\n$e"),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              historyAsync.when(
-                data: (checkins) => _buildTimeline(checkins, myId, partnerName),
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 48),
-                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                ),
-                error: (e, _) => _buildMessage("Couldn't load your history.\n$e"),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -89,8 +89,8 @@ class HistoryScreen extends ConsumerWidget {
     final target = _nextMilestone(streak);
     final remaining = target - streak;
 
-    return GlassCard(
-      padding: const EdgeInsets.all(32),
+    return AppCard(
+      padding: const EdgeInsets.all(28),
       child: Column(
         children: [
           Stack(
@@ -102,7 +102,7 @@ class HistoryScreen extends ConsumerWidget {
                 child: CircularProgressIndicator(
                   value: target == 0 ? 0 : (streak / target).clamp(0.0, 1.0),
                   strokeWidth: 8,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.surfaceContainerHigh,
                   valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                   strokeCap: StrokeCap.round,
                 ),
@@ -110,28 +110,26 @@ class HistoryScreen extends ConsumerWidget {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.local_fire_department_rounded,
-                      color: AppColors.primaryContainer, size: 32),
-                  const SizedBox(height: 4),
+
                   streakAsync.when(
                     data: (s) => Text(
                       '${s['current']}',
                       style: AppTypography.display
-                          .copyWith(color: AppColors.primaryContainer, height: 1.1),
+                          .copyWith(color: AppColors.onSurface, fontSize: 56, height: 1),
                     ),
                     loading: () => const SizedBox(
                         height: 40, width: 40, child: CircularProgressIndicator()),
                     error: (_, __) => const Text('—'),
                   ),
-                  Text('DAYS',
-                      style: AppTypography.labelMd.copyWith(color: AppColors.outline)),
+                  Text(streak == 1 ? 'day' : 'days',
+                      style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 24),
           Text(
-            streak == 0 ? 'Start your streak today' : "You're on a roll!",
+            streak == 0 ? 'Start your streak today' : 'Keep it going',
             style: AppTypography.headlineMd,
           ),
           const SizedBox(height: 8),
@@ -215,7 +213,7 @@ class HistoryScreen extends ConsumerWidget {
   }) {
     final iconColor = entry.isComplete
         ? AppColors.primary
-        : (entry.isEmpty ? AppColors.outline : AppColors.tertiary);
+        : (entry.isEmpty ? AppColors.outline : AppColors.secondary);
 
     final subtitle = entry.isComplete
         ? 'You and $partnerName both checked in'
@@ -287,7 +285,7 @@ class HistoryScreen extends ConsumerWidget {
   }
 
   Widget _buildDayCard(_TimelineDay entry, String partnerName) {
-    return GlassCard(
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
@@ -300,7 +298,7 @@ class HistoryScreen extends ConsumerWidget {
                 if (entry.mine != null && entry.theirs != null)
                   const SizedBox(height: 12),
                 if (entry.theirs != null)
-                  _moodRow(partnerName, entry.theirs!, AppColors.tertiary),
+                  _moodRow(partnerName, entry.theirs!, AppColors.secondary),
               ],
             ),
           ),
@@ -308,13 +306,13 @@ class HistoryScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                color: AppColors.primaryContainer,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
                 '${_syncScore(entry.mine!, entry.theirs!)}% Sync',
                 style: AppTypography.labelMd
-                    .copyWith(color: AppColors.primaryContainer),
+                    .copyWith(color: AppColors.onPrimaryContainer),
               ),
             ),
         ],

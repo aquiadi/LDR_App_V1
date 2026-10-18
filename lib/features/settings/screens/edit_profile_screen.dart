@@ -5,7 +5,7 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/custom_textfield.dart';
-import '../../../shared/widgets/accent_gradient_button.dart';
+import '../../../shared/widgets/primary_button.dart';
 import '../../auth/providers/current_user_provider.dart';
 import '../../../core/network/supabase_client.dart';
 
@@ -66,7 +66,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving profile: $e', style: const TextStyle(color: Colors.white))),
+          SnackBar(content: Text('Error saving profile: $e')),
         );
       }
     } finally {
@@ -77,12 +77,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return AmbientBackground(
+      maxWidth: 560,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: Text('Edit Profile', style: AppTypography.headlineLgMobile),
+          title: const Text('Account details'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded, color: AppColors.onSurfaceVariant),
             onPressed: () => context.pop(),
@@ -146,7 +147,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   prefixIcon: Icons.link_rounded,
                 ),
                 const SizedBox(height: 48),
-                AccentGradientButton(
+                PrimaryButton(
                   text: 'Save Changes',
                   isLoading: _isLoading,
                   onPressed: _saveProfile,

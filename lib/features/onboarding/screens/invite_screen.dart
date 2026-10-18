@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../shared/widgets/custom_textfield.dart';
-import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_shell.dart';
 import '../providers/invite_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_couple_provider.dart';
@@ -20,7 +21,6 @@ class InviteScreen extends ConsumerStatefulWidget {
 class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerProviderStateMixin {
   final _codeController = TextEditingController();
   late final AnimationController _glowController;
-  late final Animation<double> _glowAnimation;
 
   @override
   void initState() {
@@ -30,9 +30,6 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
     
-    _glowAnimation = Tween<double>(begin: 0.1, end: 0.35).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
-    );
   }
 
   @override
@@ -67,81 +64,33 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        titleSpacing: 24,
+        title: const Wordmark(size: 22),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, color: AppColors.textMuted),
-            onPressed: () {
-              ref.read(authControllerProvider.notifier).signOut();
-            },
-          )
+          TextButton.icon(
+            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+            icon: const Icon(Icons.logout_rounded, size: 18),
+            label: const Text('Sign out'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.onSurfaceVariant),
+          ),
+          const SizedBox(width: 12),
         ],
       ),
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          // Animated Background Glows
-          AnimatedBuilder(
-            animation: _glowAnimation,
-            builder: (context, child) {
-              return Positioned(
-                top: -50,
-                left: -50,
-                child: Container(
-                  width: 350,
-                  height: 350,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.secondary.withValues(alpha: _glowAnimation.value),
-                        blurRadius: 150,
-                        spreadRadius: 50,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          AnimatedBuilder(
-            animation: _glowAnimation,
-            builder: (context, child) {
-              return Positioned(
-                bottom: -100,
-                right: -50,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: _glowAnimation.value * 0.8),
-                        blurRadius: 150,
-                        spreadRadius: 50,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: GlassCard(
-                  padding: const EdgeInsets.all(32),
-                  child: generatedCouple != null
-                      ? _buildGeneratedCodeView(generatedCouple.inviteCode, inviteState)
-                      : _buildActionSelectionView(inviteState),
-                ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: AppCard(
+                padding: const EdgeInsets.all(28),
+                child: generatedCouple != null
+                    ? _buildGeneratedCodeView(generatedCouple.inviteCode, inviteState)
+                    : _buildActionSelectionView(inviteState),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -150,20 +99,16 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(
-          Icons.people_rounded,
-          size: 48,
-          color: AppColors.primary,
-        ),
-        const SizedBox(height: 24),
+        const _Badge(icon: Icons.people_outline_rounded),
+        const SizedBox(height: 20),
         Text(
-          'Connect with Partner',
-          style: AppTypography.h2,
+          'Pair with your partner',
+          style: AppTypography.headlineLg,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
-          'Share your unique invite code or enter your partner\'s code to sync.',
+          'Enter the 8-character code your partner sent you, or start a space and send them yours.',
           style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -176,11 +121,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
           onPressed: () {
             context.push('/onboarding');
           },
-          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-          child: Text(
-            'I want to create a space',
-            style: AppTypography.buttonText,
-          ),
+          child: const Text('I want to create a space'),
         ),
       ],
     );
@@ -231,44 +172,42 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(
-          Icons.celebration_rounded,
-          size: 48,
-          color: AppColors.secondary,
-        ),
-        const SizedBox(height: 24),
+        const _Badge(icon: Icons.mark_email_unread_outlined),
+        const SizedBox(height: 20),
         Text(
-          'Code Generated!',
-          style: AppTypography.h2,
+          'Your space is ready',
+          style: AppTypography.headlineLg,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
-          'Share this code with your partner. Once they enter it, your accounts will be linked.',
+          "Send this code to your partner. As soon as they enter it, you'll both land on your dashboard.",
           style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 32),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(24, 12, 12, 12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
+            color: AppColors.surfaceContainerLow,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+            border: Border.all(color: AppColors.outlineVariant),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              SelectableText(
                 code,
-                style: AppTypography.h1.copyWith(
-                  letterSpacing: 4,
-                  color: AppColors.primary,
+                style: AppTypography.buttonText.copyWith(
+                  fontSize: 28,
+                  letterSpacing: 6,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.copy_rounded, color: AppColors.primary),
+              TextButton.icon(
                 onPressed: () => _copyToClipboard(code),
+                icon: const Icon(Icons.copy_rounded, size: 18),
+                label: const Text('Copy'),
               ),
             ],
           ),
@@ -291,7 +230,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
                 const SizedBox(width: 12),
                 Opacity(
                   opacity: 0.5 + (_glowController.value * 0.5),
-                  child: Text('Waiting for partner to join...', style: AppTypography.bodySmall),
+                  child: Text('Waiting for your partner to join', style: AppTypography.bodySmall),
                 ),
               ],
             );
@@ -306,6 +245,21 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
         const SizedBox(height: 16),
         _buildJoinForm(inviteState),
       ],
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final IconData icon;
+  const _Badge({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: const BoxDecoration(color: AppColors.primaryContainer, shape: BoxShape.circle),
+      child: Icon(icon, color: AppColors.primary, size: 26),
     );
   }
 }

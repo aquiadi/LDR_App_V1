@@ -68,6 +68,17 @@ String utcOffsetLabel(Duration offset) {
   return 'UTC$sign$hh:$mm';
 }
 
+/// Reads a label written by [utcOffsetLabel] back into an offset. Returns
+/// null for anything else (older rows hold IANA names or nothing useful).
+Duration? parseUtcOffset(String? label) {
+  if (label == null) return null;
+  if (label == 'UTC') return Duration.zero;
+  final m = RegExp(r'^UTC([+-])(\d{2}):(\d{2})$').firstMatch(label);
+  if (m == null) return null;
+  final minutes = int.parse(m.group(2)!) * 60 + int.parse(m.group(3)!);
+  return Duration(minutes: m.group(1) == '-' ? -minutes : minutes);
+}
+
 /// Whether the partner currently has the app open, from Supabase Presence.
 ///
 /// One channel per couple: this user tracks themselves on it once the join

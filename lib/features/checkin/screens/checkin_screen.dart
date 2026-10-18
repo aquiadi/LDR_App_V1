@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../shared/mood_catalog.dart';
-import '../../../shared/widgets/glass_card.dart';
-import '../../../shared/widgets/ambient_background.dart';
-import '../../../shared/widgets/accent_gradient_button.dart';
+import '../../../shared/widgets/responsive.dart';
+import '../../../shared/widgets/primary_button.dart';
 import '../providers/checkin_provider.dart';
 import '../../../services/checkin_service.dart' show kMinMoodScore, kMaxMoodScore;
 import '../../auth/providers/partner_provider.dart';
+import '../../dashboard/providers/prompt_provider.dart';
 
 class CheckinScreen extends ConsumerStatefulWidget {
   const CheckinScreen({super.key});
@@ -21,7 +21,7 @@ class CheckinScreen extends ConsumerStatefulWidget {
 class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   int _energyScore = 5;
   bool _submitting = false;
-  String _selectedEmoji = 'sentiment_very_satisfied'; // We use icons now, mapped to string
+  String _selectedEmoji = 'sentiment_very_satisfied'; // a mood id from kMoodOptions
   String _moodLabel = 'Joyful';
   final _thoughtsController = TextEditingController();
 
@@ -92,215 +92,193 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   @override
   Widget build(BuildContext context) {
     final checkinState = ref.watch(todayCheckinProvider);
-
-    return AmbientBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: _buildAppBar(),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              children: [
-                _buildCeremonialGreeting(),
-                const SizedBox(height: 48),
-                _buildMainInteractiveContent(checkinState),
-                const SizedBox(height: 48),
-                Text(
-                  '"Distance is just a test to see how far love can travel."',
-                  style: AppTypography.bodySm.copyWith(fontStyle: FontStyle.italic, color: AppColors.outline.withValues(alpha: 0.6)),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: const SizedBox.shrink(),
-      leadingWidth: 0,
-      title: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surfaceContainerHigh,
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
-            ),
-            child: const Icon(Icons.favorite_rounded, color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Text('LDR Sync', style: AppTypography.headlineMd.copyWith(color: AppColors.primary)),
-        ],
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: IconButton(
-            icon: const Icon(Icons.close_rounded, color: AppColors.primary),
-            onPressed: () => context.pop(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCeremonialGreeting() {
     final partnerName = ref.watch(partnerStreamProvider).valueOrNull?.displayName;
-    return Column(
-      children: [
-        Text('Daily Check-In', style: AppTypography.headlineLgMobile),
-        const SizedBox(height: 8),
-        Text(
-          partnerName == null
-              ? 'Share how you\'re feeling today.'
-              : 'Tell $partnerName how you\'re feeling today.',
-          style: AppTypography.bodyMd.copyWith(color: AppColors.outline),
-        ),
-      ],
-    );
-  }
+    final prompt = ref.watch(dailyPromptProvider);
+    final busy = checkinState.isLoading || _submitting;
 
-  Widget _buildMainInteractiveContent(AsyncValue checkinState) {
-    return GlassCard(
-      padding: const EdgeInsets.all(24),
-      borderRadius: 24,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildEnergySlider(),
-              const SizedBox(width: 24),
-              Expanded(child: _buildMoodSelector()),
-            ],
-          ),
-          const SizedBox(height: 32),
-          _buildThoughtsField(),
-          const SizedBox(height: 32),
-          AccentGradientButton(
-            text: 'Share Vibe',
-            icon: Icons.send_rounded,
-            isLoading: checkinState.isLoading || _submitting,
-            onPressed: _submit,
-          ),
-        ],
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Close',
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Check in'),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                child: ContentWidth(
+                  maxWidth: 560,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('How was today, really?', style: AppTypography.headlineLg),
+                      const SizedBox(height: 8),
+                      Text(
+                        partnerName == null
+                            ? 'Your partner sees this the moment you send it.'
+                            : '$partnerName sees this the moment you send it.',
+                        style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: 32),
+                      const _SectionLabel('Mood'),
+                      const SizedBox(height: 12),
+                      _buildMoodSelector(),
+                      const SizedBox(height: 32),
+                      _buildEnergySlider(),
+                      const SizedBox(height: 32),
+                      const _SectionLabel('In a line or two'),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Today's question: $prompt",
+                        style: AppTypography.bodySm.copyWith(color: AppColors.outline),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildThoughtsField(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                border: Border(top: BorderSide(color: AppColors.outlineVariant)),
+              ),
+              child: ContentWidth(
+                maxWidth: 560,
+                child: PrimaryButton(
+                  text: partnerName == null ? 'Send check-in' : 'Send to $partnerName',
+                  icon: Icons.arrow_upward_rounded,
+                  isLoading: busy,
+                  onPressed: _submit,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEnergySlider() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('ENERGY', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 250,
-          child: RotatedBox(
-            quarterTurns: 3,
-            child: Slider(
-              // Bounds mirror the database CHECK constraint. A 0 here used to
-              // be rejected by Postgres, losing the whole check-in.
-              value: _energyScore.toDouble(),
-              min: kMinMoodScore.toDouble(),
-              max: kMaxMoodScore.toDouble(),
-              divisions: kMaxMoodScore - kMinMoodScore,
-              activeColor: AppColors.primary,
-              inactiveColor: Colors.white.withValues(alpha: 0.1),
-              onChanged: (val) {
-                setState(() {
-                  _energyScore = val.toInt();
-                });
-              },
+        Row(
+          children: [
+            const _SectionLabel('Energy'),
+            const Spacer(),
+            Text(
+              '$_energyScore · ${_getEnergyLabel()}',
+              style: AppTypography.bodyMd.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
             ),
-          ),
+          ],
         ),
-        const SizedBox(height: 16),
-        Text(
-          _getEnergyLabel(),
-          style: AppTypography.bodyMd.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+        const SizedBox(height: 4),
+        Slider(
+          // Bounds mirror the database CHECK constraint. A 0 here used to
+          // be rejected by Postgres, losing the whole check-in.
+          value: _energyScore.toDouble(),
+          min: kMinMoodScore.toDouble(),
+          max: kMaxMoodScore.toDouble(),
+          divisions: kMaxMoodScore - kMinMoodScore,
+          label: '$_energyScore',
+          onChanged: (val) => setState(() => _energyScore = val.toInt()),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Running on empty', style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
+              Text('Buzzing', style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
+            ],
+          ),
         ),
       ],
     );
   }
 
   Widget _buildMoodSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('I\'M FEELING...', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
-        const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 1.2,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 420 ? 3 : 2;
+        const spacing = 10.0;
+        final width = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
           children: kMoodOptions.map((mood) {
             final isSelected = _selectedEmoji == mood.id;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedEmoji = mood.id;
-                  _moodLabel = mood.label;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.04),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.1),
+            return SizedBox(
+              width: width,
+              child: Semantics(
+                button: true,
+                selected: isSelected,
+                child: Material(
+                  color: isSelected ? AppColors.primaryContainer : AppColors.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: isSelected ? AppColors.primary : AppColors.outlineVariant),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(mood.icon, color: AppColors.primary, size: 28),
-                    const SizedBox(height: 8),
-                    Text(mood.label, style: AppTypography.labelMd),
-                  ],
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => setState(() {
+                      _selectedEmoji = mood.id;
+                      _moodLabel = mood.label;
+                    }),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      child: Row(
+                        children: [
+                          Icon(mood.icon, color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant, size: 22),
+                          const SizedBox(width: 10),
+                          Text(
+                            mood.label,
+                            style: AppTypography.bodyMd.copyWith(
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              color: isSelected ? AppColors.onPrimaryContainer : AppColors.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             );
           }).toList(),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildThoughtsField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('WHAT\'S ON YOUR MIND?', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _thoughtsController,
-          maxLines: 4,
-          style: AppTypography.bodyLg,
-          decoration: InputDecoration(
-            hintText: 'Share a little more...',
-            hintStyle: AppTypography.bodyLg.copyWith(color: AppColors.outlineVariant),
-            filled: false,
-            border: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.outlineVariant)),
-            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.outlineVariant)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primary, width: 2)),
-            contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          ),
-        ),
-      ],
+    return TextField(
+      controller: _thoughtsController,
+      minLines: 3,
+      maxLines: 6,
+      style: AppTypography.bodyLg,
+      textCapitalization: TextCapitalization.sentences,
+      decoration: const InputDecoration(hintText: 'Share a little more...'),
     );
   }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) =>
+      Text(text, style: AppTypography.cardTitle.copyWith(fontSize: 15));
 }

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/responsive.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
@@ -89,7 +92,9 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
       ),
       extendBodyBehindAppBar: true,
       body: SafeArea(
-        child: Padding(
+        child: ContentWidth(
+          maxWidth: 560,
+          child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
@@ -128,6 +133,7 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
             ],
           ),
         ),
+        ),
       ),
     );
   }
@@ -136,7 +142,7 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Name your space', style: AppTypography.h1),
+        Text('Name your space', style: AppTypography.headlineLg),
         const SizedBox(height: 8),
         Text('Give your shared world a special name.', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary)),
         const SizedBox(height: 32),
@@ -155,7 +161,7 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('When did it start?', style: AppTypography.h1),
+        Text('When did it start?', style: AppTypography.headlineLg),
         const SizedBox(height: 8),
         Text('Set your anniversary date so we can celebrate milestones.', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary)),
         const SizedBox(height: 32),
@@ -166,19 +172,6 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
               initialDate: DateTime.now(),
               firstDate: DateTime(1900),
               lastDate: DateTime.now(),
-              builder: (context, child) {
-                return Theme(
-                  data: ThemeData.dark().copyWith(
-                    colorScheme: const ColorScheme.dark(
-                      primary: AppColors.primary,
-                      onPrimary: Colors.white,
-                      surface: AppColors.surfaceElevated,
-                      onSurface: AppColors.textPrimary,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
             );
             if (date != null) {
               setState(() {
@@ -189,16 +182,16 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: AppColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.surfaceElevated),
+              color: AppColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.outlineVariant),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   _anniversaryDate != null
-                      ? '${_anniversaryDate!.day}/${_anniversaryDate!.month}/${_anniversaryDate!.year}'
+                      ? DateFormat.yMMMMd().format(_anniversaryDate!)
                       : 'Select Date',
                   style: AppTypography.bodyLarge.copyWith(
                     color: _anniversaryDate != null ? AppColors.textPrimary : AppColors.textMuted,
@@ -219,7 +212,7 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Leave a welcome note', style: AppTypography.h1),
+        Text('Leave a welcome note', style: AppTypography.headlineLg),
         const SizedBox(height: 8),
         Text('This is the first thing they will see when they join.', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary)),
         const SizedBox(height: 32),
@@ -227,7 +220,7 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
           controller: _welcomeMessageController,
           labelText: 'Welcome Message',
           hintText: 'I made this for us...',
-          // maxLines is not in CustomTextField by default, let me just remove it to be safe.
+          maxLines: 3,
         ),
         const Spacer(),
         _buildNextButton(label: 'Finish & Invite'),
@@ -236,19 +229,6 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
   }
 
   Widget _buildNextButton({String label = 'Next'}) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        onPressed: _isCreating ? null : _nextPage,
-        child: _isCreating 
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: AppColors.textPrimary, strokeWidth: 2))
-            : Text(label, style: AppTypography.buttonText),
-      ),
-    );
+    return PrimaryButton(text: label, isLoading: _isCreating, onPressed: _nextPage);
   }
 }

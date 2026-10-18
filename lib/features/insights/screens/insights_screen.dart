@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../shared/widgets/ambient_background.dart';
-import '../../../shared/widgets/glass_card.dart';
-import '../../../shared/widgets/accent_gradient_button.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/responsive.dart';
 import '../providers/insights_provider.dart';
 import '../../auth/providers/partner_provider.dart';
 
@@ -27,37 +27,34 @@ class InsightsScreen extends ConsumerWidget {
     final insightsAsync = ref.watch(weeklyInsightsProvider);
     final partnerName =
         ref.watch(partnerStreamProvider).valueOrNull?.displayName ?? 'your partner';
-    final heroSubtitle = 'You and $partnerName are deeply connected this week.';
+    String heroSubtitle(int pct) => pct >= 75
+        ? 'Your energy and $partnerName\'s have been closely in step this week.'
+        : pct >= 50
+            ? 'Mostly in step with $partnerName, with a few different days.'
+            : 'You and $partnerName are having quite different weeks. Worth a call?';
 
     return AmbientBackground(
+      maxWidth: 704,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          titleSpacing: 24,
-          title: Text('AI Insights', style: AppTypography.headlineLgMobile),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: IconButton(
-                icon: const Icon(Icons.info_outline_rounded, color: AppColors.onSurfaceVariant),
-                onPressed: () {},
-              ),
-            ),
-          ],
-        ),
         body: insightsAsync.when(
           data: (data) {
             if (data.isEmpty) return const Center(child: Text('Not enough data yet.'));
             return ListView(
-              padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 120),
+              padding: EdgeInsets.fromLTRB(Breakpoints.isCompact(context) ? 20 : 32, 24, Breakpoints.isCompact(context) ? 20 : 32, 32),
               children: [
+                Text('This week', style: AppTypography.headlineLg),
+                const SizedBox(height: 4),
+                Text(
+                  'Worked out from the last seven days of check-ins.',
+                  style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 24),
                 // Values arrive as decoded JSON, so numbers are `num` and
                 // lists are `List<dynamic>`. Casting straight to List<double>
                 // threw as soon as the edge function was actually deployed —
                 // only the hard-coded fallback ever satisfied that cast.
-                _buildSyncHero(_asInt(data['syncPercentage']), subtitle: heroSubtitle),
+                _buildSyncHero(_asInt(data['syncPercentage']), subtitle: heroSubtitle(_asInt(data['syncPercentage']))),
                 const SizedBox(height: 32),
                 _buildTrendChart(_asDoubles(data['trendData'])),
                 const SizedBox(height: 32),
@@ -83,21 +80,15 @@ class InsightsScreen extends ConsumerWidget {
             Container(
               width: 200,
               height: 200,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryContainer.withValues(alpha: 0.15),
-                    blurRadius: 100,
-                    spreadRadius: 20,
-                  ),
-                ],
+                color: AppColors.primaryContainer,
               ),
             ),
             Column(
               children: [
-                Text('$percentage%', style: AppTypography.display.copyWith(fontSize: 64, color: AppColors.primaryContainer)),
-                Text('IN SYNC', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 2)),
+                Text('$percentage%', style: AppTypography.display.copyWith(fontSize: 64, color: AppColors.onPrimaryContainer)),
+                Text('in sync', style: AppTypography.bodyMd.copyWith(color: AppColors.onPrimaryContainer)),
               ],
             ),
           ],
@@ -112,9 +103,9 @@ class InsightsScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('EMOTIONAL TREND', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
+        Text('Energy this week', style: AppTypography.cardTitle),
         const SizedBox(height: 16),
-        GlassCard(
+        AppCard(
           padding: const EdgeInsets.all(24),
           child: SizedBox(
             height: 150,
@@ -132,28 +123,14 @@ class InsightsScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('CONNECTION CATALYST', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
+        Text('Something to try', style: AppTypography.cardTitle),
         const SizedBox(height: 16),
-        GlassCard(
+        AppCard(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.auto_awesome_rounded, color: AppColors.secondary, size: 24),
-                  const SizedBox(width: 8),
-                  Text('AI Suggestion', style: AppTypography.headlineMd.copyWith(fontSize: 18, color: AppColors.secondary)),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(prompt, style: AppTypography.bodyLg.copyWith(height: 1.5)),
-              const SizedBox(height: 24),
-              AccentGradientButton(
-                text: 'Send Voice Note',
-                icon: Icons.mic_rounded,
-                onPressed: () {},
-              ),
+              Text(prompt, style: AppTypography.headlineMd.copyWith(fontSize: 24, height: 1.3)),
             ],
           ),
         ),
@@ -165,7 +142,7 @@ class InsightsScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('SYNC TIPS', style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5)),
+        Text('Small things that help', style: AppTypography.cardTitle),
         const SizedBox(height: 16),
         ...tips.map((tip) {
           final iconData = tip['icon'] == 'chat_bubble_outline' 
@@ -174,14 +151,14 @@ class InsightsScreen extends ConsumerWidget {
               
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: GlassCard(
+            child: AppCard(
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryContainer,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(iconData, color: AppColors.primary, size: 24),
@@ -191,9 +168,9 @@ class InsightsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(tip['title'] as String, style: AppTypography.headlineMd.copyWith(fontSize: 16)),
+                        Text(tip['title'] as String, style: AppTypography.cardTitle.copyWith(fontSize: 15)),
                         const SizedBox(height: 4),
-                        Text(tip['desc'] as String, style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
+                        Text(tip['desc'] as String, style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
                       ],
                     ),
                   ),
@@ -242,7 +219,7 @@ class _TrendChartPainter extends CustomPainter {
     // Paint line
     final paint = Paint()
       ..shader = const LinearGradient(
-        colors: [AppColors.primaryContainer, AppColors.secondary],
+        colors: [AppColors.primary, AppColors.secondary],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
@@ -261,8 +238,8 @@ class _TrendChartPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          AppColors.primaryContainer.withValues(alpha: 0.3),
-          AppColors.primaryContainer.withValues(alpha: 0.0),
+          AppColors.primary.withValues(alpha: 0.18),
+          AppColors.primary.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
@@ -275,7 +252,7 @@ class _TrendChartPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
       
     final dotBorderPaint = Paint()
-      ..color = AppColors.primaryContainer
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 

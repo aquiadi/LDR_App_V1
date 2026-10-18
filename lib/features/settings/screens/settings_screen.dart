@@ -4,21 +4,20 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/typography.dart';
 import '../../../shared/widgets/ambient_background.dart';
-import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/responsive.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_user_provider.dart';
 import '../../auth/providers/current_couple_provider.dart';
 import '../../auth/providers/partner_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/navigation/app_router.dart';
-import '../providers/settings_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final prefs = ref.watch(settingsControllerProvider);
     final userAsync = ref.watch(currentUserProvider);
     final partnerAsync = ref.watch(partnerStreamProvider);
     final coupleAsync = ref.watch(currentCoupleStreamProvider);
@@ -28,20 +27,15 @@ class SettingsScreen extends ConsumerWidget {
     final couple = coupleAsync.valueOrNull;
 
     return AmbientBackground(
+      maxWidth: 704,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text('Us', style: AppTypography.headlineLgMobile),
-          centerTitle: true,
-        ),
         body: ListView(
-          padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 120),
+          padding: EdgeInsets.fromLTRB(Breakpoints.isCompact(context) ? 20 : 32, 24, Breakpoints.isCompact(context) ? 20 : 32, 32),
           children: [
             _buildAvatarHeader(user, partner, couple),
             const SizedBox(height: 32),
-            _buildSectionHeader('YOUR RELATIONSHIP'),
+            _buildSectionHeader('Your relationship'),
             _buildSettingsGroup(
               children: [
                 _buildSettingsRow(
@@ -54,64 +48,32 @@ class SettingsScreen extends ConsumerWidget {
                 _buildDivider(),
                 _buildSettingsRow(
                   icon: Icons.location_on_rounded,
-                  title: '${partner?.displayName ?? 'Partner'}\'s Timezone',
+                  title: '${partner?.displayName ?? 'Partner'}\'s time zone',
                   value: partner?.timezone ?? 'Unknown',
                 ),
                 _buildDivider(),
                 _buildSettingsRow(
                   icon: Icons.access_time_rounded,
-                  title: 'Your Timezone',
+                  title: 'Your time zone',
                   value: user?.timezone ?? 'Unknown',
                 ),
               ],
             ),
             const SizedBox(height: 32),
-            _buildSectionHeader('APP PREFERENCES'),
-            _buildSettingsGroup(
-              children: [
-                _buildSwitchRow(
-                  icon: Icons.notifications_active_rounded,
-                  title: 'Push Notifications',
-                  value: prefs.pushNotifications,
-                  onChanged: (v) => ref.read(settingsControllerProvider.notifier).togglePushNotifications(v),
-                ),
-                _buildDivider(),
-                _buildSwitchRow(
-                  icon: Icons.vibration_rounded,
-                  title: 'Haptic Feedback',
-                  value: prefs.hapticFeedback,
-                  onChanged: (v) => ref.read(settingsControllerProvider.notifier).toggleHapticFeedback(v),
-                ),
-                _buildDivider(),
-                _buildSettingsRow(
-                  icon: Icons.palette_rounded,
-                  title: 'Theme',
-                  value: 'System Default',
-                  showChevron: true,
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            _buildSectionHeader('ACCOUNT'),
+            _buildSectionHeader('Account'),
             _buildSettingsGroup(
               children: [
                 _buildSettingsRow(
-                  icon: Icons.person_rounded,
+                  icon: Icons.person_outline_rounded,
                   title: 'Account Details',
                   showChevron: true,
                   onTap: () => context.push(AppRoutes.editProfile),
                 ),
                 _buildDivider(),
-                _buildSettingsRow(
-                  icon: Icons.privacy_tip_rounded,
-                  title: 'Privacy & Security',
-                  showChevron: true,
-                ),
-                _buildDivider(),
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                   leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-                  title: Text('Sign Out', style: AppTypography.bodyLg.copyWith(color: AppColors.error)),
+                  title: Text('Sign Out', style: AppTypography.bodyMd.copyWith(color: AppColors.error, fontWeight: FontWeight.w500)),
                   onTap: () {
                     ref.read(authControllerProvider.notifier).signOut();
                   },
@@ -128,10 +90,9 @@ class SettingsScreen extends ConsumerWidget {
     final userName = user?.displayName ?? 'You';
     final partnerName = partner?.displayName ?? 'Partner';
     
-    // Simple duration calc for MVP
-    final String connectionDuration = couple?.createdAt != null 
-      ? 'Connected since ${couple!.createdAt.year}'
-      : 'Connected recently';
+    final String connectionDuration = couple?.createdAt != null
+      ? 'Together on LDR Sync since ${DateFormat.yMMMM().format(couple!.createdAt)}'
+      : 'Together on LDR Sync';
 
     return Column(
       children: [
@@ -168,9 +129,9 @@ class SettingsScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.3)),
+                  border: Border.all(color: AppColors.outlineVariant),
                 ),
-                child: const Icon(Icons.favorite_rounded, color: AppColors.primaryContainer, size: 20),
+                child: const Icon(Icons.favorite_rounded, color: AppColors.primary, size: 18),
               ),
               // Partner
               Positioned(
@@ -181,9 +142,9 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text('$userName & $partnerName', style: AppTypography.headlineLgMobile),
+        Text('$userName & $partnerName', style: AppTypography.headlineLg),
         const SizedBox(height: 4),
-        Text(connectionDuration, style: AppTypography.bodySm.copyWith(color: AppColors.primary)),
+        Text(connectionDuration, style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
       ],
     );
   }
@@ -213,13 +174,13 @@ class SettingsScreen extends ConsumerWidget {
       padding: const EdgeInsets.only(left: 8, bottom: 8),
       child: Text(
         title,
-        style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 1.5),
+        style: AppTypography.bodySm.copyWith(color: AppColors.outline, fontWeight: FontWeight.w500),
       ),
     );
   }
 
   Widget _buildSettingsGroup({required List<Widget> children}) {
-    return GlassCard(
+    return AppCard(
       padding: EdgeInsets.zero,
       borderRadius: 16,
       child: Column(
@@ -238,47 +199,26 @@ class SettingsScreen extends ConsumerWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Icon(icon, color: AppColors.onSurfaceVariant),
-      title: Text(title, style: AppTypography.bodyLg),
+      title: Text(title, style: AppTypography.bodyMd),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (value != null) Text(value, style: AppTypography.bodyMd.copyWith(color: AppColors.outline)),
+          if (value != null) Text(value, style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
           if (showChevron) ...[
             if (value != null) const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.outlineVariant),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.outline),
           ],
         ],
       ),
-      onTap: onTap ?? (showChevron ? () {} : null),
-    );
-  }
-
-  Widget _buildSwitchRow({
-    required IconData icon,
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Icon(icon, color: AppColors.onSurfaceVariant),
-      title: Text(title, style: AppTypography.bodyLg),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeThumbColor: AppColors.primary,
-        activeTrackColor: AppColors.primaryContainer.withValues(alpha: 0.3),
-        inactiveThumbColor: AppColors.outline,
-        inactiveTrackColor: AppColors.surfaceVariant,
-      ),
+      onTap: onTap,
     );
   }
 
   Widget _buildDivider() {
-    return Divider(
+    return const Divider(
       height: 1,
       thickness: 1,
-      color: AppColors.outlineVariant.withValues(alpha: 0.2),
+      color: AppColors.outlineVariant,
       indent: 56, // Align with text
     );
   }

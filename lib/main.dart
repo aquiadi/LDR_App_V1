@@ -10,7 +10,7 @@ import 'core/navigation/app_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Sora and Inter ship in assets/google_fonts/. Without this the package
+  // Instrument Serif and Inter ship in assets/google_fonts/. Without this the package
   // fetches them from fonts.gstatic.com on first paint, so a cold start with
   // no network renders the entire UI without any text.
   GoogleFonts.config.allowRuntimeFetching = false;
@@ -62,11 +62,11 @@ class LdrApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // If config keys are missing, render a premium onboarding dashboard explaining setup
+    // Without the Supabase keys there is nothing to connect to, so explain how to set them
     if (!isConfigured) {
       return MaterialApp(
         title: 'Emotional Sync (LDR)',
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.theme,
         debugShowCheckedModeBanner: false,
         home: ConfigurationErrorScreen(message: configErrorMessage),
       );
@@ -76,14 +76,14 @@ class LdrApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Emotional Sync (LDR)',
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.theme,
       debugShowCheckedModeBanner: false,
       routerConfig: router,
     );
   }
 }
 
-/// A visually pleasing dark-mode fallback screen displayed when keys are unconfigured.
+/// Shown instead of the app when the Supabase keys were not compiled in.
 class ConfigurationErrorScreen extends StatelessWidget {
   final String? message;
 

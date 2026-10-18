@@ -16,4 +16,18 @@ void main() {
       expect(utcOffsetLabel(const Duration(hours: -3, minutes: -30)), 'UTC-03:30');
     });
   });
+
+  group('parseUtcOffset', () {
+    test('round-trips utcOffsetLabel', () {
+      for (final d in const [Duration.zero, Duration(hours: 5, minutes: 30), Duration(hours: -7), Duration(hours: 13, minutes: 45)]) {
+        expect(parseUtcOffset(utcOffsetLabel(d)), d);
+      }
+    });
+
+    test('anything else is unknown', () {
+      expect(parseUtcOffset(null), isNull);
+      expect(parseUtcOffset('Asia/Kolkata'), isNull);
+      expect(parseUtcOffset('UTC+5'), isNull);
+    });
+  });
 }
