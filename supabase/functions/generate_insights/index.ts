@@ -61,6 +61,9 @@ serve(async (req) => {
 
     // 2. Call OpenAI for insights
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+    // Overridable so a model retirement is a `supabase secrets set`, not a
+    // redeploy. gpt-3.5-turbo, the original choice, is being shut down.
+    const OPENAI_MODEL = Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'
     
     let catalystPrompt = "Send a voice note to your partner telling them your favorite memory from this week."
     let tips = [
@@ -85,12 +88,16 @@ serve(async (req) => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
+                    model: OPENAI_MODEL,
+                    // Without this the model sometimes wraps its reply in a
+                    // ```json fence and JSON.parse below throws.
+                    response_format: { type: 'json_object' },
                     messages: [
                         { role: 'system', content: 'You are an AI relationship coach for a long-distance couple. Based on their recent check-ins, provide 1 actionable "catalyst" suggestion and 2 short "tips" (one about Communication, one about Affection). Return ONLY valid JSON in this exact structure: {"catalystPrompt": "string", "tips": [{"title": "Communication", "desc": "string", "icon": "chat_bubble_outline"}, {"title": "Affection", "desc": "string", "icon": "favorite_border"}]}' },
                         { role: 'user', content: `Here is the couple's checkin data for the last 7 days: ${JSON.stringify(checkins)}` }
                     ],
-                    temperature: 0.7,
+                    // No temperature: newer models only accept the default,
+                    // and the override above must work without a code change.
                 })
             })
             
@@ -98,7 +105,20 @@ serve(async (req) => {
                 const aiData = await openAiRes.json()
                 const aiContent = JSON.parse(aiData.choices[0].message.content)
                 catalystPrompt = aiContent.catalystPrompt || catalystPrompt
-                tips = aiContent.tips || tips
+                // Only take the tips if they have the shape the app renders;
+                // anything else would break the Insights screen.
+                if (Array.isArray(aiContent.tips) && aiContent.tips.every((t: any) =>
+                        t && typeof t.title === 'string' && typeof t.desc === 'string')) {
+                    tips = aiContent.tips.map((t: any) => ({
+                        icon: typeof t.icon === 'string' ? t.icon : 'favorite_border',
+                        title: t.title,
+                        desc: t.desc,
+                    }))
+                }
+            } else {
+                // Previously dropped silently, which made a retired model or a
+                // bad key look exactly like "no key configured".
+                console.error(`OpenAI request failed (${openAiRes.status}):`, await openAiRes.text())
             }
         } catch (e) {
             console.error("OpenAI Error:", e)
