@@ -17,10 +17,10 @@
   ];
 
   const SKY = {
-    dawn: ['#F4C7A1', '#E9A6A1'],
-    day: ['#BFD8EC', '#E6EEF3'],
-    dusk: ['#F2B279', '#D9776A'],
-    night: ['#2F3A66', '#1B2140'],
+    dawn: ['#F6C9A8', '#E7A3B5'],
+    day: ['#BCD6F5', '#E5EEFA'],
+    dusk: ['#F4AE7E', '#C86A9A'],
+    night: ['#2A2F6B', '#121534'],
   };
 
   const youZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -62,7 +62,7 @@
   function paint(card, hour) {
     const [a, b] = SKY[skyFor(hour)];
     card.style.background = `linear-gradient(${a}, ${b})`;
-    card.classList.toggle('is-dark', hour < 5 || hour >= 20);
+    card.classList.toggle('is-night', hour < 5 || hour >= 20);
   }
 
   function describeGap(minutes, city) {
@@ -134,6 +134,30 @@
   const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 8);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
+
+  // Light / dark. Follows the system until the visitor picks one, and the
+  // screenshots swap to match.
+  const root = document.documentElement;
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  const toggle = $('theme-toggle');
+  const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : media.matches;
+  function applyTheme() {
+    const dark = isDark();
+    root.classList.toggle('is-dark', dark);
+    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    document.querySelectorAll('img[data-dark]').forEach((img) => {
+      if (!img.dataset.light) img.dataset.light = img.getAttribute('src');
+      const want = dark ? img.dataset.dark : img.dataset.light;
+      if (img.getAttribute('src') !== want) img.setAttribute('src', want);
+    });
+  }
+  toggle.addEventListener('click', () => {
+    root.dataset.theme = isDark() ? 'light' : 'dark';
+    try { localStorage.setItem('theme', root.dataset.theme); } catch (e) { /* private mode */ }
+    applyTheme();
+  });
+  media.addEventListener('change', applyTheme);
+  applyTheme();
 
   const year = $('year');
   if (year) year.textContent = String(new Date().getFullYear());
