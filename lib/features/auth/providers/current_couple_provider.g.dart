@@ -7,7 +7,7 @@ part of 'current_couple_provider.dart';
 // **************************************************************************
 
 String _$currentCoupleStreamHash() =>
-    r'085309804406399a0cc8e373708025f6d6cc27d9';
+    r'6d279b54365c4712731886d12fd8253aa2331ba1';
 
 /// See also [currentCoupleStream].
 @ProviderFor(currentCoupleStream)

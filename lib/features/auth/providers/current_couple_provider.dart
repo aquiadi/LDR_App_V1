@@ -7,8 +7,7 @@ part 'current_couple_provider.g.dart';
 
 @riverpod
 Stream<CoupleModel?> currentCoupleStream(CurrentCoupleStreamRef ref) async* {
-  final profileAsync = ref.watch(currentUserProvider);
-  final profile = profileAsync.value;
+  final profile = ref.watch(currentUserProvider).valueOrNull;
 
   if (profile?.coupleId == null) {
     yield null;

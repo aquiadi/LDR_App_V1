@@ -70,8 +70,16 @@ GoRouter appRouter(AppRouterRef ref) {
         return AppRoutes.splash;
       }
 
-      final profile = currentUserAsync.value;
-      final couple = coupleAsync.value;
+      // The first profile fetch failed (offline at launch, a token that could
+      // not be refreshed). Reading `.value` here would rethrow inside the
+      // router and leave the app on a spinner for good; the splash screen
+      // shows the error with a retry instead.
+      if (currentUserAsync.hasError && !currentUserAsync.hasValue) {
+        return AppRoutes.splash;
+      }
+
+      final profile = currentUserAsync.valueOrNull;
+      final couple = coupleAsync.valueOrNull;
       final hasCoupleId = profile?.coupleId != null;
       final isGoingToInvite = state.matchedLocation == AppRoutes.invite;
       final isGoingToOnboarding = state.matchedLocation == AppRoutes.onboarding;
