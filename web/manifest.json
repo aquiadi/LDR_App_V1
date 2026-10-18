@@ -1,12 +1,11 @@
 {
-    "name": "ldr_app",
-    "short_name": "ldr_app",
+    "name": "LDR Sync",
+    "short_name": "LDR Sync",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#F7F2EA",
+    "theme_color": "#F7F2EA",
+    "description": "A daily check-in for couples in different time zones.",
     "prefer_related_applications": false,
     "icons": [
         {
