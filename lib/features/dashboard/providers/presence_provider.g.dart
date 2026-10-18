@@ -7,9 +7,14 @@ part of 'presence_provider.dart';
 // **************************************************************************
 
 String _$partnerPresenceStreamHash() =>
-    r'cea1e8335d08fd41757f7e9c311325a00119d887';
+    r'0eac72d40bf8d8019cb20cdcbc82d1bba16f32b0';
 
-/// See also [partnerPresenceStream].
+/// Whether the partner currently has the app open, from Supabase Presence.
+///
+/// One channel per couple: this user tracks themselves on it once the join
+/// succeeds, and the sync handler reports whether anyone *else* is present.
+///
+/// Copied from [partnerPresenceStream].
 @ProviderFor(partnerPresenceStream)
 final partnerPresenceStreamProvider = AutoDisposeStreamProvider<bool>.internal(
   partnerPresenceStream,
@@ -25,9 +30,19 @@ final partnerPresenceStreamProvider = AutoDisposeStreamProvider<bool>.internal(
 // ignore: unused_element
 typedef PartnerPresenceStreamRef = AutoDisposeStreamProviderRef<bool>;
 String _$presenceControllerHash() =>
-    r'c79e23b16d3bc781da85c73e37ede738e8bfc718';
+    r'71094c3c5a7789beb9025f564df89aed72380633';
 
-/// See also [PresenceController].
+/// Keeps `users.last_seen` and `users.timezone` fresh while the dashboard is
+/// open. This is the coarse fallback the partner card uses when the Presence
+/// channel is not live.
+///
+/// It deliberately does not open a Presence channel itself. Two channels on
+/// the same topic cannot coexist: subscribing the second one makes the
+/// realtime client leave the first, so whichever one was meant to `track()`
+/// never did and nobody ever showed as online. [partnerPresenceStream] owns
+/// the one channel and both tracks and listens on it.
+///
+/// Copied from [PresenceController].
 @ProviderFor(PresenceController)
 final presenceControllerProvider =
     AutoDisposeNotifierProvider<PresenceController, bool>.internal(

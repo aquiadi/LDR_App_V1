@@ -7,7 +7,7 @@ part of 'checkin_provider.dart';
 // **************************************************************************
 
 String _$partnerCheckinStreamHash() =>
-    r'9b853b3d83f61b3eaefad66536beb90000ada812';
+    r'96a5c3a71ba0cdac263b9bc4c43bc60f62472ccc';
 
 /// See also [partnerCheckinStream].
 @ProviderFor(partnerCheckinStream)
@@ -25,7 +25,7 @@ final partnerCheckinStreamProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PartnerCheckinStreamRef = AutoDisposeStreamProviderRef<CheckinModel?>;
-String _$todayCheckinHash() => r'8fb5c99727718e3d2e03f93994bfe6d17cc8c28a';
+String _$todayCheckinHash() => r'0e5f293602962890c086e5d591910855e9c7eeac';
 
 /// See also [TodayCheckin].
 @ProviderFor(TodayCheckin)

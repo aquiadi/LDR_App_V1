@@ -9,7 +9,7 @@ import '../../../shared/widgets/ambient_background.dart';
 import '../../auth/providers/current_user_provider.dart';
 import '../../auth/providers/partner_provider.dart';
 import '../../checkin/providers/checkin_provider.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../../core/navigation/app_router.dart';
 import '../../history/providers/history_provider.dart';
 import '../providers/presence_provider.dart';
 import '../providers/ping_provider.dart';
@@ -41,6 +41,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     final isPartnerOnline = ref.watch(partnerPresenceStreamProvider).valueOrNull ?? false;
     final isPingCooldown = ref.watch(pingControllerProvider);
+
+    // The streak counts the partner's check-ins too, so refetch the history
+    // it is computed from when one arrives over realtime.
+    // Skips the stream's first load (no previous value), which would only
+    // refetch what syncStreak is already fetching.
+    ref.listen<AsyncValue<CheckinModel?>>(partnerCheckinStreamProvider, (previous, next) {
+      if (previous == null || !previous.hasValue) return;
+      final after = next.valueOrNull;
+      if (after != null && after.id != previous.valueOrNull?.id) {
+        ref.invalidate(historyCheckinsProvider);
+      }
+    });
 
     // Listen to incoming pings to show a SnackBar
     ref.listen<AsyncValue<Map<String, dynamic>>>(incomingPingStreamProvider, (previous, next) {
@@ -136,9 +148,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           padding: const EdgeInsets.only(right: 16),
           child: IconButton(
             icon: const Icon(Icons.settings_rounded, color: AppColors.onSurfaceVariant),
-            onPressed: () {
-              ref.read(authControllerProvider.notifier).signOut();
-            },
+            tooltip: 'Settings',
+            onPressed: () => context.go(AppRoutes.settings),
           ),
         ),
       ],

@@ -3,6 +3,7 @@ import '../../../models/checkin_model.dart';
 import '../../../services/checkin_service.dart';
 import '../../auth/providers/current_user_provider.dart';
 import '../../auth/providers/current_couple_provider.dart';
+import '../../history/providers/history_provider.dart';
 import '../../../core/network/supabase_client.dart';
 
 part 'checkin_provider.g.dart';
@@ -26,7 +27,7 @@ class TodayCheckin extends _$TodayCheckin {
     required int energyScore,
     String? journalNote,
   }) async {
-    final profile = await ref.watch(currentUserProvider.future);
+    final profile = await ref.read(currentUserProvider.future);
     if (profile?.coupleId == null) return;
 
     state = const AsyncValue.loading();
@@ -42,6 +43,11 @@ class TodayCheckin extends _$TodayCheckin {
         journalNote: journalNote,
       );
     });
+
+    // The streak and the Journey timeline are derived from this list. The
+    // dashboard stays mounted under the pushed check-in route, so without
+    // this they keep showing the count from before the check-in.
+    if (!state.hasError) ref.invalidate(historyCheckinsProvider);
   }
 }
 
@@ -64,15 +70,26 @@ Stream<CheckinModel?> partnerCheckinStream(PartnerCheckinStreamRef ref) async* {
 
   final supabase = ref.watch(supabaseClientProvider);
   
-  // Realtime stream of partner's checkins
+  // Realtime stream of the partner's check-in for *today*. Without the date
+  // filter this returned their newest row ever, so from their first check-in
+  // onwards the dashboard said they had answered every single day.
+  //
+  // "Today" is the UTC day, the same boundary the one-per-day unique index
+  // and getTodayCheckin use.
   yield* supabase
       .from('daily_checkins')
       .stream(primaryKey: ['id'])
       .eq('couple_id', profile.coupleId!)
       .order('created_at', ascending: false)
       .map((events) {
-        final partnerEvents = events.where((e) => e['user_id'] == partnerId).toList();
-        if (partnerEvents.isEmpty) return null;
-        return CheckinModel.fromJson(partnerEvents.first);
+        final now = DateTime.now().toUtc();
+        final todayStart = DateTime.utc(now.year, now.month, now.day);
+        for (final e in events) {
+          if (e['user_id'] != partnerId) continue;
+          final createdAt = DateTime.parse(e['created_at'] as String).toUtc();
+          if (createdAt.isBefore(todayStart)) continue;
+          return CheckinModel.fromJson(e);
+        }
+        return null;
       });
 }
