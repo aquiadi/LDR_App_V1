@@ -28,7 +28,7 @@ class SplashScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.cloud_off_rounded, color: AppColors.outline, size: 40),
+                    Icon(Icons.cloud_off_rounded, color: AppColors.outline, size: 40),
                     const SizedBox(height: 16),
                     Text(
                       "Couldn't load your profile.",
@@ -53,7 +53,7 @@ class SplashScreen extends ConsumerWidget {
                   ],
                 ),
               )
-            : const CircularProgressIndicator(color: AppColors.primary),
+            : CircularProgressIndicator(color: AppColors.primary),
       ),
     );
   }

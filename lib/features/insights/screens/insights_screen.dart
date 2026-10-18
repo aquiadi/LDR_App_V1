@@ -64,7 +64,7 @@ class InsightsScreen extends ConsumerWidget {
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
           error: (e, _) => Center(child: Text('Error: $e')),
         ),
       ),
@@ -80,7 +80,7 @@ class InsightsScreen extends ConsumerWidget {
             Container(
               width: 200,
               height: 200,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.primaryContainer,
               ),
@@ -130,7 +130,7 @@ class InsightsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(prompt, style: AppTypography.headlineMd.copyWith(fontSize: 24, height: 1.3)),
+              Text(prompt, style: AppTypography.bodyLg.copyWith(fontSize: 20, height: 1.45, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -157,7 +157,7 @@ class InsightsScreen extends ConsumerWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.primaryContainer,
                       shape: BoxShape.circle,
                     ),
@@ -218,7 +218,7 @@ class _TrendChartPainter extends CustomPainter {
 
     // Paint line
     final paint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         colors: [AppColors.primary, AppColors.secondary],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.stroke

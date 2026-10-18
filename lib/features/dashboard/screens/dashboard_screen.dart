@@ -64,7 +64,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.favorite_rounded, color: AppColors.inversePrimary, size: 20),
+                Icon(Icons.favorite_rounded, color: AppColors.inversePrimary, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text("${partnerAsync.valueOrNull?.displayName ?? 'Your partner'} is thinking of you"),
@@ -233,7 +233,7 @@ class _Header extends StatelessWidget {
         if (!Breakpoints.isExpanded(context))
           IconButton(
             tooltip: 'Settings',
-            icon: const Icon(Icons.settings_outlined, color: AppColors.onSurfaceVariant),
+            icon: Icon(Icons.settings_outlined, color: AppColors.onSurfaceVariant),
             onPressed: () => context.go(AppRoutes.settings),
           ),
       ],
@@ -255,8 +255,10 @@ class _PartnerSkyCard extends StatelessWidget {
     final theirNow = offset == null ? null : DateTime.now().toUtc().add(offset);
     final hour = theirNow?.hour ?? DateTime.now().hour;
     final dark = SkyPalette.isDark(hour);
-    final ink = dark ? AppColors.inverseOnSurface : AppColors.onSurface;
-    final soft = dark ? AppColors.inverseOnSurface.withValues(alpha: 0.75) : AppColors.onSurfaceVariant;
+    // The sky looks the same in both themes, so its text colours are fixed
+    // to the sky rather than taken from the theme.
+    final ink = dark ? SkyPalette.inkOnDark : SkyPalette.inkOnLight;
+    final soft = ink.withValues(alpha: 0.72);
     final name = partner?.displayName ?? 'Your partner';
 
     String status;
@@ -276,7 +278,7 @@ class _PartnerSkyCard extends StatelessWidget {
     }
 
     return AppCard(
-      gradient: SkyPalette.forHour(hour),
+      gradient: SkyPalette.forHour(hour, dim: AppColors.isDark),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,7 +299,7 @@ class _PartnerSkyCard extends StatelessWidget {
                           height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: online ? const Color(0xff4CAF7A) : soft.withValues(alpha: 0.5),
+                            color: online ? const Color(0xff22C55E) : soft.withValues(alpha: 0.5),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -311,9 +313,14 @@ class _PartnerSkyCard extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           if (theirNow != null) ...[
-            Text(
-              DateFormat('h:mm a').format(theirNow).toLowerCase(),
-              style: AppTypography.display.copyWith(color: ink, fontSize: 56, height: 1),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                DateFormat('h:mm a').format(theirNow).toLowerCase(),
+                maxLines: 1,
+                style: AppTypography.display.copyWith(color: ink, fontSize: 52, height: 1),
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -346,7 +353,7 @@ class _Avatar extends StatelessWidget {
       height: 44,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: dark ? Colors.white.withValues(alpha: 0.15) : AppColors.surfaceContainer,
+        color: dark ? Colors.white.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.85),
         image: hasUrl ? DecorationImage(image: NetworkImage(url!), fit: BoxFit.cover) : null,
       ),
       alignment: Alignment.center,
@@ -355,7 +362,7 @@ class _Avatar extends StatelessWidget {
           : Text(
               name.isEmpty ? '?' : name.characters.first.toUpperCase(),
               style: AppTypography.cardTitle.copyWith(
-                color: dark ? AppColors.inverseOnSurface : AppColors.onSurface,
+                color: dark ? SkyPalette.inkOnDark : SkyPalette.inkOnLight,
               ),
             ),
     );
@@ -563,7 +570,7 @@ class _DayDot extends StatelessWidget {
             color: filled ? AppColors.primary : AppColors.surfaceContainerHigh,
             border: isToday && !filled ? Border.all(color: AppColors.primary, width: 1.5) : null,
           ),
-          child: filled ? const Icon(Icons.check_rounded, size: 16, color: AppColors.onPrimary) : null,
+          child: filled ? Icon(Icons.check_rounded, size: 16, color: AppColors.onPrimary) : null,
         ),
         const SizedBox(height: 6),
         Text(label, style: AppTypography.labelMd.copyWith(color: AppColors.outline, letterSpacing: 0)),
@@ -760,7 +767,7 @@ class _CheckinSheet extends StatelessWidget {
                       value: checkin.energyScore / 10,
                       minHeight: 8,
                       backgroundColor: AppColors.surfaceContainerHigh,
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
                     ),
                   ),
                 ),
@@ -774,7 +781,7 @@ class _CheckinSheet extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 checkin.journalNote!,
-                style: AppTypography.headlineMd.copyWith(fontSize: 24, height: 1.3),
+                style: AppTypography.bodyLg.copyWith(fontSize: 20, height: 1.45, fontWeight: FontWeight.w500),
               ),
             ],
           ],

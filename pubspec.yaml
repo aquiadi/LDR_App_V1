@@ -50,6 +50,16 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    # Sora and Inter are bundled rather than fetched at runtime; see
+    # Inter is bundled rather than fetched at runtime; see
     # AppTypography for why. google_fonts resolves these by filename.
     - assets/google_fonts/
+
+  # Archivo at its expanded width (wdth 125). google_fonts can't select a
+  # width axis, so the two static instances are bundled as their own family.
+  fonts:
+    - family: ArchivoExpanded
+      fonts:
+        - asset: assets/fonts/ArchivoExpanded-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/ArchivoExpanded-Bold.ttf
+          weight: 700

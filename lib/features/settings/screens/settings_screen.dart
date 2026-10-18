@@ -12,6 +12,7 @@ import '../../auth/providers/current_couple_provider.dart';
 import '../../auth/providers/partner_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/navigation/app_router.dart';
+import '../providers/appearance_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -60,6 +61,28 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 32),
+            _buildSectionHeader('Appearance'),
+            _buildSettingsGroup(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(value: ThemeMode.system, label: Text('System'), icon: Icon(Icons.brightness_auto_outlined)),
+                        ButtonSegment(value: ThemeMode.light, label: Text('Light'), icon: Icon(Icons.light_mode_outlined)),
+                        ButtonSegment(value: ThemeMode.dark, label: Text('Dark'), icon: Icon(Icons.dark_mode_outlined)),
+                      ],
+                      selected: {ref.watch(appearanceProvider)},
+                      onSelectionChanged: (s) => ref.read(appearanceProvider.notifier).set(s.first),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
             _buildSectionHeader('Account'),
             _buildSettingsGroup(
               children: [
@@ -72,7 +95,7 @@ class SettingsScreen extends ConsumerWidget {
                 _buildDivider(),
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                  leading: const Icon(Icons.logout_rounded, color: AppColors.error),
+                  leading: Icon(Icons.logout_rounded, color: AppColors.error),
                   title: Text('Sign Out', style: AppTypography.bodyMd.copyWith(color: AppColors.error, fontWeight: FontWeight.w500)),
                   onTap: () {
                     ref.read(authControllerProvider.notifier).signOut();
@@ -97,6 +120,7 @@ class SettingsScreen extends ConsumerWidget {
     return Column(
       children: [
         SizedBox(
+          width: 260,
           height: 100,
           child: Stack(
             alignment: Alignment.center,
@@ -131,7 +155,7 @@ class SettingsScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.outlineVariant),
                 ),
-                child: const Icon(Icons.favorite_rounded, color: AppColors.primary, size: 18),
+                child: Icon(Icons.favorite_rounded, color: AppColors.primary, size: 18),
               ),
               // Partner
               Positioned(
@@ -164,7 +188,7 @@ class SettingsScreen extends ConsumerWidget {
           : null,
       ),
       child: url == null || url.isEmpty
-          ? const Icon(Icons.person_rounded, size: 40, color: AppColors.outline)
+          ? Icon(Icons.person_rounded, size: 40, color: AppColors.outline)
           : null,
     );
   }
@@ -206,7 +230,7 @@ class SettingsScreen extends ConsumerWidget {
           if (value != null) Text(value, style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
           if (showChevron) ...[
             if (value != null) const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.outline),
+            Icon(Icons.chevron_right_rounded, color: AppColors.outline),
           ],
         ],
       ),
@@ -215,7 +239,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildDivider() {
-    return const Divider(
+    return Divider(
       height: 1,
       thickness: 1,
       color: AppColors.outlineVariant,

@@ -146,7 +146,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
           child: ElevatedButton(
             onPressed: inviteState.isLoading ? null : _joinCouple,
             child: inviteState.isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     height: 20, width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textPrimary))
                 : const Text('Join Couple'),
@@ -222,7 +222,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
               children: [
                 Opacity(
                   opacity: 0.5 + (_glowController.value * 0.5),
-                  child: const SizedBox(
+                  child: SizedBox(
                     height: 16, width: 16,
                     child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                   ),
@@ -258,7 +258,7 @@ class _Badge extends StatelessWidget {
     return Container(
       width: 56,
       height: 56,
-      decoration: const BoxDecoration(color: AppColors.primaryContainer, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: AppColors.primaryContainer, shape: BoxShape.circle),
       child: Icon(icon, color: AppColors.primary, size: 26),
     );
   }

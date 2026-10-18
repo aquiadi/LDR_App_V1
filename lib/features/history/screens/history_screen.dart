@@ -68,8 +68,8 @@ class HistoryScreen extends ConsumerWidget {
                   const SizedBox(height: 36),
                   historyAsync.when(
                     data: (checkins) => _buildTimeline(checkins, myId, partnerName),
-                    loading: () => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 48),
+                    loading: () => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 48),
                       child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
                     ),
                     error: (e, _) => _buildMessage("Couldn't load your history.\n$e"),
@@ -103,7 +103,7 @@ class HistoryScreen extends ConsumerWidget {
                   value: target == 0 ? 0 : (streak / target).clamp(0.0, 1.0),
                   strokeWidth: 8,
                   backgroundColor: AppColors.surfaceContainerHigh,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                   strokeCap: StrokeCap.round,
                 ),
               ),

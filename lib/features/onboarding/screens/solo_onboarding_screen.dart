@@ -83,7 +83,7 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
         elevation: 0,
         leading: _currentIndex > 0 && !_isCreating
             ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
                 onPressed: () {
                   _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
                 },
@@ -197,7 +197,7 @@ class _SoloOnboardingScreenState extends ConsumerState<SoloOnboardingScreen> {
                     color: _anniversaryDate != null ? AppColors.textPrimary : AppColors.textMuted,
                   ),
                 ),
-                const Icon(Icons.calendar_today_rounded, color: AppColors.textMuted),
+                Icon(Icons.calendar_today_rounded, color: AppColors.textMuted),
               ],
             ),
           ),

@@ -3,8 +3,8 @@
     "short_name": "LDR Sync",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#F7F2EA",
-    "theme_color": "#F7F2EA",
+    "background_color": "#0E1020",
+    "theme_color": "#0E1020",
     "description": "A daily check-in for couples in different time zones.",
     "prefer_related_applications": false,
     "icons": [

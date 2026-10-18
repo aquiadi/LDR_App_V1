@@ -85,7 +85,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           elevation: 0,
           title: const Text('Account details'),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.onSurfaceVariant),
+            icon: Icon(Icons.arrow_back_rounded, color: AppColors.onSurfaceVariant),
             onPressed: () => context.pop(),
           ),
         ),
@@ -114,16 +114,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               : null,
                         ),
                         child: _avatarUrlController.text.isEmpty
-                            ? const Icon(Icons.person_rounded, size: 40, color: AppColors.outline)
+                            ? Icon(Icons.person_rounded, size: 40, color: AppColors.outline)
                             : null,
                       ),
                       Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.primaryContainer,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.onPrimaryContainer),
+                        child: Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.onPrimaryContainer),
                       ),
                     ],
                   ),

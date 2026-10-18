@@ -6,14 +6,22 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/typography.dart';
 import 'core/theme/colors.dart';
 import 'core/navigation/app_router.dart';
+import 'features/settings/providers/appearance_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Instrument Serif and Inter ship in assets/google_fonts/. Without this the package
+  // Inter ships in assets/google_fonts/ (and Archivo Expanded in assets/fonts/). Without this the package
   // fetches them from fonts.gstatic.com on first paint, so a cold start with
   // no network renders the entire UI without any text.
   GoogleFonts.config.allowRuntimeFetching = false;
+
+  try {
+    Appearance.prefs = await SharedPreferences.getInstance();
+  } catch (_) {
+    // No storage available: the app just follows the system theme.
+  }
 
   // Retrieve environment variables
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -65,9 +73,12 @@ class LdrApp extends ConsumerWidget {
     // Without the Supabase keys there is nothing to connect to, so explain how to set them
     if (!isConfigured) {
       return MaterialApp(
-        title: 'Emotional Sync (LDR)',
-        theme: AppTheme.theme,
+        title: 'LDR Sync',
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeAnimationDuration: Duration.zero,
         debugShowCheckedModeBanner: false,
+        builder: _withPalette,
         home: ConfigurationErrorScreen(message: configErrorMessage),
       );
     }
@@ -75,11 +86,44 @@ class LdrApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'Emotional Sync (LDR)',
-      theme: AppTheme.theme,
+      title: 'LDR Sync',
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ref.watch(appearanceProvider),
+      themeAnimationDuration: Duration.zero,
       debugShowCheckedModeBanner: false,
+      builder: _withPalette,
       routerConfig: router,
     );
+  }
+
+  static Brightness? _appliedBrightness;
+
+  /// Points [AppColors] at the palette for the theme MaterialApp resolved
+  /// (system, light or dark).
+  ///
+  /// Widgets read AppColors directly rather than through `Theme.of`, so they
+  /// don't rebuild by themselves when it changes, and `const` widgets under
+  /// GoRouter's keyed navigators would keep the old colours. So after a
+  /// switch, every element below is marked for rebuild once.
+  static Widget _withPalette(BuildContext context, Widget? child) {
+    final brightness = Theme.of(context).brightness;
+    if (brightness != _appliedBrightness) {
+      final isSwitch = _appliedBrightness != null;
+      _appliedBrightness = brightness;
+      AppColors.use(brightness);
+      if (isSwitch) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) return;
+          void rebuild(Element e) {
+            e.markNeedsBuild();
+            e.visitChildren(rebuild);
+          }
+          (context as Element).visitChildren(rebuild);
+        });
+      }
+    }
+    return child ?? const SizedBox.shrink();
   }
 }
 
@@ -109,7 +153,7 @@ class ConfigurationErrorScreen extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.favorite_rounded,
                   color: AppColors.primary,
                   size: 40,

@@ -5,11 +5,12 @@ import 'colors.dart';
 class AppTypography {
   AppTypography._();
 
-  // Display: Instrument Serif. It only comes in one weight, so hierarchy
-  // comes from size, not boldness.
-  static TextStyle get _displayFamily => GoogleFonts.instrumentSerif(
+  // Display: Archivo at its expanded width. Wide letterforms carry the
+  // headings, so they can stay a size smaller than a narrow face would need.
+  static TextStyle get _displayFamily => TextStyle(
+        fontFamily: 'ArchivoExpanded',
         color: AppColors.onSurface,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w600,
       );
 
   // Everything else: Inter
@@ -17,35 +18,36 @@ class AppTypography {
         color: AppColors.onSurface,
       );
 
-  // --- Display & Headings (Instrument Serif) ---
+  // --- Display & Headings (Archivo Expanded) ---
 
   static TextStyle get display => _displayFamily.copyWith(
-        fontSize: 48,
-        height: 52 / 48,
-        letterSpacing: -0.01 * 48,
+        fontSize: 40,
+        fontWeight: FontWeight.w700,
+        height: 1.08,
+        letterSpacing: -0.8,
       );
 
   static TextStyle get headlineLg => _displayFamily.copyWith(
-        fontSize: 36,
-        height: 42 / 36,
-        letterSpacing: -0.01 * 36,
+        fontSize: 28,
+        height: 1.15,
+        letterSpacing: -0.4,
       );
 
   static TextStyle get headlineLgMobile => _displayFamily.copyWith(
-        fontSize: 32,
-        height: 38 / 32,
+        fontSize: 26,
+        height: 1.15,
+        letterSpacing: -0.3,
       );
 
   static TextStyle get headlineMd => _displayFamily.copyWith(
-        fontSize: 28,
-        height: 34 / 28,
+        fontSize: 21,
+        height: 1.2,
+        letterSpacing: -0.2,
       );
 
-  /// Serif italic, for the one emotional word in a heading.
-  static TextStyle get accentItalic => GoogleFonts.instrumentSerif(
-        color: AppColors.primary,
-        fontStyle: FontStyle.italic,
-      );
+  /// The display face in the accent colour, for the one word in a heading
+  /// that should stand out.
+  static TextStyle get accent => _displayFamily.copyWith(color: AppColors.primary);
 
   // --- Body Copy (Inter) ---
   

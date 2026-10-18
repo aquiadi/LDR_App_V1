@@ -149,7 +149,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.background,
                 border: Border(top: BorderSide(color: AppColors.outlineVariant)),
               ),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/colors.dart';
 
-/// A sheet of paper: warm white, a hairline edge and a soft shadow.
+/// A card: the raised surface colour, a hairline edge and, in light mode, a
+/// soft shadow.
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;

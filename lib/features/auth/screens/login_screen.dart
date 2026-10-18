@@ -218,7 +218,7 @@ class _BrandPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DefaultTextStyle.merge(
-            style: const TextStyle(color: AppColors.inverseOnSurface),
+            style: const TextStyle(color: SkyPalette.inkOnDark),
             child: const _LightWordmark(),
           ),
           const Spacer(),
@@ -230,11 +230,11 @@ class _BrandPanel extends StatelessWidget {
                   const TextSpan(text: 'Two time zones.\nOne small ritual, '),
                   TextSpan(
                     text: 'every day.',
-                    style: AppTypography.accentItalic.copyWith(color: const Color(0xffF2B279)),
+                    style: AppTypography.accent.copyWith(color: const Color(0xffC9BEFF)),
                   ),
                 ],
               ),
-              style: AppTypography.display.copyWith(color: AppColors.inverseOnSurface),
+              style: AppTypography.display.copyWith(color: SkyPalette.inkOnDark, fontSize: 44),
             ),
           ),
           const SizedBox(height: 20),
@@ -243,7 +243,7 @@ class _BrandPanel extends StatelessWidget {
             child: Text(
               'Tell each other how the day actually went: a mood, your energy, '
               'one honest line. It lands on their screen the moment you send it.',
-              style: AppTypography.bodyLg.copyWith(color: AppColors.inverseOnSurface.withValues(alpha: 0.8)),
+              style: AppTypography.bodyLg.copyWith(color: SkyPalette.inkOnDark.withValues(alpha: 0.8)),
             ),
           ),
         ],
@@ -259,11 +259,11 @@ class _LightWordmark extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(width: 9, height: 9, decoration: const BoxDecoration(color: Color(0xffF2B279), shape: BoxShape.circle)),
+        Container(width: 9, height: 9, decoration: const BoxDecoration(color: Color(0xffA79BFF), shape: BoxShape.circle)),
         const SizedBox(width: 3),
-        Container(width: 9, height: 9, decoration: const BoxDecoration(color: AppColors.inverseOnSurface, shape: BoxShape.circle)),
+        Container(width: 9, height: 9, decoration: const BoxDecoration(color: Color(0xffFF7FA8), shape: BoxShape.circle)),
         const SizedBox(width: 9),
-        Text('LDR Sync', style: AppTypography.headlineMd.copyWith(fontSize: 26, height: 1, color: AppColors.inverseOnSurface)),
+        Text('LDR Sync', style: AppTypography.headlineMd.copyWith(fontSize: 22, height: 1, color: SkyPalette.inkOnDark)),
       ],
     );
   }
