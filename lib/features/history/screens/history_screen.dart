@@ -196,8 +196,11 @@ class HistoryScreen extends ConsumerWidget {
 
   String _labelForDay(DateTime day) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final diff = today.difference(day).inDays;
+    // Compare calendar dates in UTC so a daylight-saving change (a 23 or 25
+    // hour local day) cannot turn yesterday into "Today".
+    final diff = DateTime.utc(now.year, now.month, now.day)
+        .difference(DateTime.utc(day.year, day.month, day.day))
+        .inDays;
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Yesterday';
     if (diff < 7) return DateFormat('EEEE').format(day);

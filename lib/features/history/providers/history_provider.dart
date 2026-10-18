@@ -36,13 +36,22 @@ Future<List<CheckinModel>> historyCheckins(HistoryCheckinsRef ref) async {
 ///
 /// A day counts if *either* partner checked in, which matches how the
 /// `trg_update_streak` database trigger maintains `streaks.current_streak`.
+///
+/// Days are UTC calendar days, the same as the trigger and the one-per-day
+/// unique index. Bucketing by the device's local day instead loses check-ins:
+/// in UTC-7 an evening check-in lands on the next UTC day, the following
+/// evening's check-in then *updates* that same row, and the local-day view
+/// sees a gap where the user actually checked in every day.
 Map<String, int> calculateStreak(
   Iterable<DateTime> checkinTimestamps, {
   DateTime? today,
 }) {
-  DateTime dayOf(DateTime d) => DateTime(d.year, d.month, d.day);
+  DateTime dayOf(DateTime d) {
+    final u = d.toUtc();
+    return DateTime.utc(u.year, u.month, u.day);
+  }
 
-  final days = checkinTimestamps.map((d) => dayOf(d.toLocal())).toSet().toList()
+  final days = checkinTimestamps.map(dayOf).toSet().toList()
     ..sort((a, b) => b.compareTo(a));
 
   if (days.isEmpty) return {'current': 0, 'longest': 0};
@@ -55,7 +64,7 @@ Map<String, int> calculateStreak(
   // constructor normalises an overflowing day, so this handles month and year
   // boundaries too.
   bool isDayBefore(DateTime later, DateTime earlier) =>
-      DateTime(earlier.year, earlier.month, earlier.day + 1) == later;
+      DateTime.utc(earlier.year, earlier.month, earlier.day + 1) == later;
 
   var longest = 1;
   var run = 1;

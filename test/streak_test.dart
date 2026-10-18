@@ -2,8 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ldr_app/features/history/providers/history_provider.dart';
 
 void main() {
-  // Fixed reference date keeps these deterministic.
-  final today = DateTime(2024, 6, 20);
+  // Fixed reference date keeps these deterministic. Streaks are counted in UTC
+  // days, so the fixtures are UTC too and the result does not depend on the
+  // time zone of the machine running the tests.
+  final today = DateTime.utc(2024, 6, 20);
   DateTime daysAgo(int n) => today.subtract(Duration(days: n));
 
   group('calculateStreak', () {
@@ -66,13 +68,33 @@ void main() {
     });
 
     test('handles month and year boundaries', () {
-      final newYear = DateTime(2025, 1, 1);
+      final newYear = DateTime.utc(2025, 1, 1);
       final result = calculateStreak([
         newYear,
-        DateTime(2024, 12, 31),
-        DateTime(2024, 12, 30),
+        DateTime.utc(2024, 12, 31),
+        DateTime.utc(2024, 12, 30),
       ], today: newYear);
       expect(result['current'], 3);
+    });
+
+    // Regression: days used to be bucketed by the device's local date while
+    // the one-per-day rule uses UTC. In UTC-7, Monday's 18:00 check-in is
+    // stored on Tuesday (UTC); Tuesday's 16:00 check-in then updates that same
+    // row; Wednesday's 16:00 check-in is a new row. Three days in a row, but
+    // the local view saw Monday and Wednesday only and reported a streak of 1.
+    test('counts UTC days, matching the database', () {
+      final result = calculateStreak([
+        DateTime.utc(2026, 6, 16, 1), // Mon 18:00 PDT, updated on Tue 16:00
+        DateTime.utc(2026, 6, 17, 23), // Wed 16:00 PDT
+      ], today: DateTime.utc(2026, 6, 17, 23, 30));
+      expect(result['current'], 2);
+      expect(result['longest'], 2);
+    });
+
+    test('a non-UTC timestamp is bucketed by its UTC date', () {
+      // 23:30 at UTC+05:30 on the 20th is 18:00 UTC on the 20th.
+      final local = DateTime.parse('2024-06-20T23:30:00+05:30');
+      expect(calculateStreak([local], today: today), {'current': 1, 'longest': 1});
     });
 
     test('unsorted input is handled', () {
