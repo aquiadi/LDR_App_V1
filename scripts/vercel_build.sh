@@ -14,13 +14,16 @@ set -euo pipefail
 
 FLUTTER_VERSION="${FLUTTER_VERSION:-3.44.9}"
 CACHE_DIR="${PWD}/.vercel/cache"
-SDK_DIR="${CACHE_DIR}/flutter"
+# Versioned path, so changing FLUTTER_VERSION actually fetches that version
+# instead of silently reusing whichever SDK happens to be cached.
+SDK_DIR="${CACHE_DIR}/flutter-${FLUTTER_VERSION}"
 
 if [ -x "${SDK_DIR}/bin/flutter" ]; then
   echo "==> Reusing cached Flutter SDK at ${SDK_DIR}"
 else
   echo "==> Fetching Flutter ${FLUTTER_VERSION} (first build only; later builds reuse the cache)"
-  rm -rf "${SDK_DIR}"
+  # Drop SDKs for other versions so the build cache does not keep growing.
+  rm -rf "${CACHE_DIR}"/flutter "${CACHE_DIR}"/flutter-*
   mkdir -p "${CACHE_DIR}"
   git clone --depth 1 --branch "${FLUTTER_VERSION}" \
     https://github.com/flutter/flutter.git "${SDK_DIR}"
