@@ -44,7 +44,11 @@ class AppShell extends StatelessWidget {
           children: [
             _Sidebar(tabs: _tabs, current: current, onSelect: go),
             const VerticalDivider(width: 1),
-            Expanded(child: child),
+            // The routes inside carry a BlockSemantics, which hides whatever
+            // was painted before it in the same semantics container. That
+            // was the sidebar, so screen readers couldn't reach the tabs.
+            // A container of its own keeps the block inside the content.
+            Expanded(child: Semantics(container: true, child: child)),
           ],
         ),
       );
@@ -54,7 +58,7 @@ class AppShell extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: child,
       bottomNavigationBar: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surfaceContainer,
           border: Border(top: BorderSide(color: AppColors.outlineVariant)),
         ),
@@ -100,6 +104,7 @@ class _BottomItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = active ? AppColors.primary : AppColors.outline;
     return Semantics(
+      container: true,
       button: true,
       selected: active,
       label: tab.label,
@@ -122,6 +127,8 @@ class _BottomItem extends StatelessWidget {
             ExcludeSemantics(
               child: Text(
                 tab.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.labelMd.copyWith(
                   color: active ? AppColors.onSurface : AppColors.outline,
                   letterSpacing: 0.2,
@@ -195,9 +202,11 @@ class _SidebarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      container: true,
       button: true,
       selected: active,
       label: tab.label,
+      onTap: onTap,
       excludeSemantics: true,
       child: Material(
         color: active ? AppColors.primaryContainer : Colors.transparent,
@@ -250,9 +259,15 @@ class Wordmark extends StatelessWidget {
         SizedBox(width: size * 0.12),
         _Dot(color: AppColors.secondary, size: size * 0.36),
         SizedBox(width: size * 0.35),
-        Text('LDR Sync',
-            style:
-                AppTypography.headlineMd.copyWith(fontSize: size, height: 1)),
+        Flexible(
+          child: Text(
+            'LDR Sync',
+            maxLines: 1,
+            overflow: TextOverflow.fade,
+            softWrap: false,
+            style: AppTypography.headlineMd.copyWith(fontSize: size, height: 1),
+          ),
+        ),
       ],
     );
   }
