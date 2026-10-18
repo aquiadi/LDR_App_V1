@@ -441,6 +441,15 @@ begin
         raise exception 'This couple is already full.';
     end if;
 
+    if exists (
+        select 1 from public.couples c
+         where (c.partner_1_id = auth.uid() or c.partner_2_id = auth.uid())
+           and c.partner_1_id is not null
+           and c.partner_2_id is not null
+    ) then
+        raise exception 'You are already paired.';
+    end if;
+
     update public.couples
        set partner_2_id = auth.uid()
      where id = found_couple.id
@@ -450,6 +459,20 @@ begin
        set couple_id = found_couple.id,
            updated_at = now()
      where id = auth.uid();
+
+    -- Only the caller's own space that is waiting for a partner and was
+    -- never used. A couple whose partner's account was deleted also has
+    -- partner_2_id = null but still holds the pair's history; that one is
+    -- left alone.
+    delete from public.couples c
+     where c.partner_1_id = auth.uid()
+       and c.partner_2_id is null
+       and c.id <> found_couple.id
+       and not exists (select 1 from public.daily_checkins       x where x.couple_id = c.id)
+       and not exists (select 1 from public.relationship_pings   x where x.couple_id = c.id)
+       and not exists (select 1 from public.daily_prompt_answers x where x.couple_id = c.id)
+       and not exists (select 1 from public.countdown_events     x where x.couple_id = c.id)
+       and not exists (select 1 from public.ai_insights          x where x.couple_id = c.id);
 
     return found_couple;
 end;

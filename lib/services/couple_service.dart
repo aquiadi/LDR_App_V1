@@ -133,6 +133,8 @@ class CoupleService {
         throw Exception('This couple is already full.');
       } else if (e.toString().contains('already in this couple')) {
         throw Exception('You are already in this couple.');
+      } else if (e.toString().contains('already paired')) {
+        throw Exception('You are already paired with someone.');
       }
       throw Exception('Failed to join couple: $e');
     }

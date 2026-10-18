@@ -90,3 +90,31 @@ do $$ begin
   raise notice 'ACCEPTED (unexpected)';
 exception when others then raise notice 'REJECTED -> %', SQLERRM; end $$;
 reset role;
+
+\echo '=== E. Both partners created a space: joining removes the joiner''s own empty space ==='
+insert into auth.users (id,email,raw_user_meta_data) values
+  ('44444444-4444-4444-4444-444444444444','frank@example.com','{"display_name":"Frank"}');
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+insert into public.couples (invite_code, partner_1_id) values ('EVE00001', auth.uid());
+update public.users set couple_id = (select id from public.couples where invite_code='EVE00001') where id = auth.uid();
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
+insert into public.couples (invite_code, partner_1_id) values ('FRNK0001', auth.uid());
+update public.users set couple_id = (select id from public.couples where invite_code='FRNK0001') where id = auth.uid();
+select (public.join_couple('EVE00001')).invite_code as frank_joined;
+reset role;
+select count(*) as franks_empty_space_left from public.couples where invite_code = 'FRNK0001';
+select u.display_name, c.invite_code from public.users u join public.couples c on c.id = u.couple_id
+ where u.display_name in ('Eve','Frank') order by u.display_name;
+
+\echo '=== F. A paired user cannot leave their partner by redeeming another code ==='
+insert into auth.users (id,email,raw_user_meta_data) values
+  ('55555555-5555-5555-5555-555555555555','gus@example.com','{"display_name":"Gus"}');
+set role authenticated;
+set request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';
+insert into public.couples (invite_code, partner_1_id) values ('GUS00001', auth.uid());
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$ begin perform public.join_couple('GUS00001');
+  raise notice 'ACCEPTED (unexpected)';
+exception when others then raise notice 'REJECTED -> %', SQLERRM; end $$;
+reset role;

@@ -62,7 +62,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
     final inviteState = ref.watch(inviteControllerProvider);
     final currentCoupleAsync = ref.watch(currentCoupleStreamProvider);
     
-    final generatedCouple = currentCoupleAsync.value ?? inviteState.value;
+    final generatedCouple = currentCoupleAsync.valueOrNull ?? inviteState.valueOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -135,7 +135,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
                 child: GlassCard(
                   padding: const EdgeInsets.all(32),
                   child: generatedCouple != null
-                      ? _buildGeneratedCodeView(generatedCouple.inviteCode)
+                      ? _buildGeneratedCodeView(generatedCouple.inviteCode, inviteState)
                       : _buildActionSelectionView(inviteState),
                 ),
               ),
@@ -169,7 +169,30 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
         ),
         const SizedBox(height: 32),
         
-        // Join couple flow
+        _buildJoinForm(inviteState),
+
+        const SizedBox(height: 24),
+        TextButton(
+          onPressed: () {
+            context.push('/onboarding');
+          },
+          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+          child: Text(
+            'I want to create a space',
+            style: AppTypography.buttonText,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Code entry and the Join button. Shown on both views: a user who has
+  /// already created a space must still be able to join their partner's
+  /// instead, otherwise two people who both tapped "create" could never pair.
+  Widget _buildJoinForm(AsyncValue inviteState) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         CustomTextField(
           controller: _codeController,
           labelText: 'Invite Code',
@@ -188,32 +211,23 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
                 : const Text('Join Couple'),
           ),
         ),
-
         if (inviteState.hasError) ...[
           const SizedBox(height: 16),
           Text(
-            inviteState.error.toString(),
+            _friendlyError(inviteState.error),
             style: AppTypography.bodySmall.copyWith(color: AppColors.error),
             textAlign: TextAlign.center,
           ),
         ],
-
-        const SizedBox(height: 24),
-        TextButton(
-          onPressed: () {
-            context.push('/onboarding');
-          },
-          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-          child: Text(
-            'I want to create a space',
-            style: AppTypography.buttonText,
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildGeneratedCodeView(String code) {
+  /// `Exception('...')` stringifies as "Exception: ...". Show only the message.
+  static String _friendlyError(Object? error) =>
+      error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+
+  Widget _buildGeneratedCodeView(String code, AsyncValue inviteState) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -283,17 +297,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> with SingleTickerPr
             );
           },
         ),
-        const SizedBox(height: 24),
-        TextButton(
-          onPressed: () {
-            context.push('/onboarding');
-          },
-          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-          child: Text(
-            'Recreate Space (Test)',
-            style: AppTypography.buttonText,
-          ),
+        const SizedBox(height: 32),
+        Text(
+          'Got a code from your partner instead?',
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 16),
+        _buildJoinForm(inviteState),
       ],
     );
   }
