@@ -11,8 +11,9 @@ Functions).
 **Live:** https://ldr-app-v1-n9fe.vercel.app (the landing page) and
 https://ldr-app-v1-n9fe.vercel.app/app/ (the app itself).
 
-The app works on phones, tablets and desktops: one column with a bottom bar on a
-phone, two columns on an iPad, and a sidebar layout on a laptop.
+The app works on phones, tablets and desktops (one column with a bottom bar on
+a phone, two columns on an iPad, a sidebar layout on a laptop), in light or
+dark mode.
 [Reviewing the app](#reviewing-the-app) explains how to get past the login
 screen and how to see the two-partner behaviour, which is the whole point of
 the app and needs two accounts.
@@ -329,7 +330,7 @@ If you're reviewing rather than clicking, these are the files I'd start with:
 
 ```bash
 flutter analyze     # clean
-flutter test        # 28 tests
+flutter test        # 30 tests
 ```
 
 ---
@@ -445,7 +446,7 @@ and see blank squares where new icons should be.
 
 ```bash
 flutter analyze          # clean
-flutter test             # 28 tests
+flutter test             # 30 tests
 flutter build web --release --no-web-resources-cdn --dart-define=...
 ```
 
@@ -457,18 +458,24 @@ Postgres with RLS on, including the negative cases. See
 
 ## Notes on some decisions
 
-**The look.** I wanted it to feel like paper and ink, not like another dark
-dashboard with glowing gradients. Warm off-white backgrounds, one ember accent
-for you and a dusk blue for your partner, Instrument Serif for headings and
-Inter for everything else. The only gradients are skies: your partner's card
-is coloured by the time of day where they are, worked out from the UTC offset
-the app saves with their heartbeat, so "it's 2 am for them" needs no reading.
-The landing page uses the same tokens, and its screenshots are real
-screenshots of the app.
+**The look.** I took my cues from messaging apps rather than from journaling
+apps: cool mist surfaces in light mode, midnight in dark mode, iris violet for
+you, rose for your partner and teal for the daily question. Headings are
+Archivo at its expanded width, a wide, spacious face in the same family as the
+extended display fonts a lot of social apps use, and everything else is Inter.
+The only gradients are skies: your partner's card is coloured by the time of
+day where they are, worked out from the UTC offset the app saves with their
+heartbeat, so "it's 2 am for them" needs no reading.
+
+**Dark mode.** The app follows the system by default, and Settings has
+System / Light / Dark, saved on the device. Every screen reads its colours
+from one palette that switches as a whole, so there's no screen that was
+forgotten in dark. The landing page does the same with a toggle in the header,
+and swaps its screenshots to match.
 
 **Fonts are bundled, not fetched.** By default `google_fonts` downloads font
 files at runtime. On a cold start without network, that means the UI paints
-with no text at all: not a fallback font, nothing. Instrument Serif and Inter ship in
+with no text at all: not a fallback font, nothing. Archivo Expanded and Inter ship in
 `assets/google_fonts/`, and I turn runtime fetching off in `main()`. It costs
 about 1.5 MB and buys a predictable first paint and one less third-party
 request.
