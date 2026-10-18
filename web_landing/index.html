@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LDR Sync: a daily check-in for long-distance couples</title>
+  <meta name="description" content="A small daily ritual for couples in different time zones. Share a mood, your energy and one honest line, and see each other's day land in real time.">
+  <meta name="theme-color" content="#F7F2EA">
+  <meta property="og:title" content="LDR Sync">
+  <meta property="og:description" content="A daily check-in for couples in different time zones.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="img/desktop-dashboard.webp">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preload" href="fonts/InstrumentSerif-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/Inter-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="wordmark" href="./" aria-label="LDR Sync home">
+        <span class="dot dot-you" aria-hidden="true"></span><span class="dot dot-them" aria-hidden="true"></span>
+        LDR Sync
+      </a>
+      <nav class="nav" aria-label="Page sections">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a class="link" href="app/#/login">Log in</a>
+        <a class="btn btn-small" href="app/#/login?mode=signup">Create your space</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">For couples in different time zones</p>
+          <h1>Close the distance, <em>one check-in</em> a day.</h1>
+          <p class="lede">
+            LDR Sync is a small daily ritual for long-distance couples. Each of you
+            shares how the day really went (a mood, your energy, one honest line),
+            and it lands on the other person's screen the moment you send it.
+          </p>
+          <div class="cta-row">
+            <a class="btn" href="app/#/login?mode=signup">Create your space</a>
+            <a class="btn btn-ghost" href="app/#/login">I already have an account</a>
+          </div>
+          <p class="fine">Free. Runs in the browser on your phone, tablet or computer.</p>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <figure class="phone phone-back">
+            <img src="img/phone-checkin.webp" width="390" height="844" alt="" loading="eager" decoding="async">
+          </figure>
+          <figure class="phone phone-front">
+            <img src="img/phone-dashboard.webp" width="390" height="844" alt="" loading="eager" decoding="async">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two skies -->
+    <section class="skies" aria-labelledby="skies-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="skies-title">It's never the same time for both of you.</h2>
+          <p>
+            That's the whole problem with long distance. You finish your day
+            just as theirs gets busy, and "how was your day?" turns into a
+            message that sits unread for hours. A check-in is built to wait for them.
+          </p>
+        </div>
+
+        <div class="sky-pair">
+          <article class="sky-card" id="sky-you">
+            <p class="sky-who">You<span class="sky-place" id="you-place"></span></p>
+            <p class="sky-time" id="you-time">--:--</p>
+            <p class="sky-label" id="you-label">&nbsp;</p>
+          </article>
+          <article class="sky-card" id="sky-them">
+            <p class="sky-who">
+              <label for="city">Your partner in</label>
+              <select id="city" class="sky-select"></select>
+            </p>
+            <p class="sky-time" id="them-time">--:--</p>
+            <p class="sky-label" id="them-label">&nbsp;</p>
+          </article>
+        </div>
+        <p class="sky-note" id="sky-note" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="how-title">How it works</h2>
+          <p>Setup takes two minutes. After that it's one minute a day.</p>
+        </div>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <h3>Start a space</h3>
+            <p>Sign up and you get an 8-character invite code. Send it to your partner however you usually talk.</p>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <h3>Check in once a day</h3>
+            <p>Pick a mood, slide your energy from "running on empty" to "buzzing", and add a line if you want to.</p>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <h3>See their day land</h3>
+            <p>Their check-in appears on your dashboard live, next to their local time and the colour of their sky.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <h2 id="features-title" class="visually-hidden">Features</h2>
+
+        <div class="feature">
+          <div class="feature-copy">
+            <p class="eyebrow">Your journey</p>
+            <h3>A streak you build together</h3>
+            <p>
+              Every day either of you checks in counts. The Journey tab keeps the
+              whole history, day by day, with a sync score for how closely your
+              energy matched. Missing a day breaks the streak, which is kind of the point.
+            </p>
+          </div>
+          <figure class="phone phone-solo">
+            <img src="img/phone-journey.webp" width="390" height="844" alt="The Journey screen: a six-day streak and a timeline of both partners' moods." loading="lazy" decoding="async">
+          </figure>
+        </div>
+
+        <ul class="feature-grid">
+          <li>
+            <h3>One question a day</h3>
+            <p>A small prompt to answer in your check-in, so there's something to talk about that isn't logistics.</p>
+          </li>
+          <li>
+            <h3>"Thinking of you"</h3>
+            <p>One tap sends a nudge that pops up on their screen. There's a one-minute cooldown, so it stays sweet.</p>
+          </li>
+          <li>
+            <h3>Know when they're around</h3>
+            <p>See when your partner has the app open, or how long ago they last did, before you send anything.</p>
+          </li>
+          <li>
+            <h3>Edit until midnight</h3>
+            <p>One check-in per person per day. Change your mind about the mood and you can update it until the day rolls over.</p>
+          </li>
+        </ul>
+
+        <div class="screens">
+          <div class="screens-copy">
+            <p class="eyebrow">Phone, tablet, laptop</p>
+            <h3>Made for whatever screen you're on</h3>
+            <p>
+              On a phone it's a single column you can use with one thumb. On an iPad
+              or a laptop the same dashboard spreads into two columns with a sidebar,
+              so it's comfortable to leave open on your desk.
+            </p>
+          </div>
+          <figure class="browser">
+            <div class="browser-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+            <img src="img/desktop-dashboard.webp" width="1440" height="630" alt="The LDR Sync dashboard on a desktop browser, with a sidebar and a two-column layout." loading="lazy" decoding="async">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacy -->
+    <section id="privacy" class="privacy" aria-labelledby="privacy-title">
+      <div class="wrap privacy-inner">
+        <h2 id="privacy-title">Only the two of you can read it.</h2>
+        <div class="privacy-points">
+          <p>
+            Every check-in belongs to your shared space, and the database itself
+            refuses to show it to anyone outside that space. That's enforced with
+            row-level security in Postgres, not just hidden by the app.
+          </p>
+          <p>
+            No ads, no public profiles, no feed of other couples. Just your days
+            and theirs.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="faq" aria-labelledby="faq-title">
+      <div class="wrap faq-inner">
+        <h2 id="faq-title">Questions</h2>
+        <div class="faq-list">
+          <details>
+            <summary>Does my partner need an account too?</summary>
+            <p>Yes. You each sign up with your own email. One of you starts the space and shares the code, and the other enters it.</p>
+          </details>
+          <details>
+            <summary>We both created a space by accident. Now what?</summary>
+            <p>No problem. Either of you can enter the other's code from the invite screen. Your empty space is cleaned up automatically.</p>
+          </details>
+          <details>
+            <summary>Is there an app to download?</summary>
+            <p>Not from an app store yet. It runs in your browser, and on a phone you can add it to your home screen from the share menu so it opens like an app.</p>
+          </details>
+          <details>
+            <summary>What does it cost?</summary>
+            <p>Nothing. There's no paid plan.</p>
+          </details>
+          <details>
+            <summary>What counts as "today"?</summary>
+            <p>Days are counted in UTC, so the two of you always agree on which day a check-in belongs to, even twelve time zones apart.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Closing CTA -->
+    <section class="closing">
+      <div class="wrap closing-inner">
+        <h2>Check in tonight. <em>They'll see it in the morning.</em></h2>
+        <a class="btn btn-light" href="app/#/login?mode=signup">Create your space</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <a class="wordmark wordmark-small" href="./">
+        <span class="dot dot-you" aria-hidden="true"></span><span class="dot dot-them" aria-hidden="true"></span>
+        LDR Sync
+      </a>
+      <p>Built by Aditya Jha with Flutter and Supabase. <a href="https://github.com/aquiadi/LDR_App_V1">Source on GitHub</a>.</p>
+      <p class="muted">© <span id="year">2026</span></p>
+    </div>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

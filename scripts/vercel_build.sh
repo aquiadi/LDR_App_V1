@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the Flutter web app on Vercel.
+# Build the site on Vercel: the landing page plus the Flutter web app.
 #
 # Vercel has no Flutter runtime, so the SDK is fetched here. It is placed in
 # .vercel/cache, which Vercel restores between builds -- without that, every
@@ -50,7 +50,16 @@ flutter pub get
 # third-party fetch is needed for the app to render.
 flutter build web --release \
   --no-web-resources-cdn \
+  --base-href /app/ \
   --dart-define=SUPABASE_URL="${SUPABASE_URL:-}" \
   --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 
-echo "==> Built build/web"
+# The site is the static landing page at / with the Flutter app under /app/.
+# The landing page is plain HTML so it loads instantly; the app is ~40 MB of
+# CanvasKit and only downloads once someone actually opens it.
+rm -rf build/site
+mkdir -p build/site
+cp -R web_landing/. build/site/
+cp -R build/web build/site/app
+
+echo "==> Built build/site (landing at /, app at /app/)"
